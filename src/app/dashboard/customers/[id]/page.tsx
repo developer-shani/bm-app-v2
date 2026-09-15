@@ -85,8 +85,9 @@ export default function CustomerDetailPage() {
       setCustomer(custData);
 
       // Load recoveries
-      const recSnap = await getDocs(query(collection(db, "recoveries"), where("customerId", "==", customerId), orderBy("date", "desc")));
-      setRecoveries(recSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Recovery)));
+      const recSnap = await getDocs(query(collection(db, "recoveries"), where("customerId", "==", customerId)));
+      const recs = recSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Recovery)).sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+      setRecoveries(recs);
 
       // Load investor
       if (custData.investorId) {

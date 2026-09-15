@@ -5,17 +5,20 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number): string {
+export function formatCurrency(amount: number | undefined | null): string {
+  const val = typeof amount === "number" && !isNaN(amount) ? amount : 0;
   return new Intl.NumberFormat("en-PK", {
     style: "currency",
     currency: "PKR",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(val);
 }
 
-export function formatDate(date: Date | string): string {
+export function formatDate(date: Date | string | undefined | null): string {
+  if (!date) return "N/A";
   const d = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(d.getTime())) return "N/A";
   return d.toLocaleDateString("en-PK", {
     year: "numeric",
     month: "short",
@@ -23,8 +26,10 @@ export function formatDate(date: Date | string): string {
   });
 }
 
-export function formatDateTime(date: Date | string): string {
+export function formatDateTime(date: Date | string | undefined | null): string {
+  if (!date) return "N/A";
   const d = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(d.getTime())) return "N/A";
   return d.toLocaleDateString("en-PK", {
     year: "numeric",
     month: "short",
@@ -38,8 +43,10 @@ export function generateCustomerId(): string {
   return Math.floor(1000 + Math.random() * 9000).toString();
 }
 
-export function getDaysOverdue(dueDate: Date | string): number {
+export function getDaysOverdue(dueDate: Date | string | undefined | null): number {
+  if (!dueDate) return 0;
   const due = typeof dueDate === "string" ? new Date(dueDate) : dueDate;
+  if (isNaN(due.getTime())) return 0;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   due.setHours(0, 0, 0, 0);
@@ -47,8 +54,10 @@ export function getDaysOverdue(dueDate: Date | string): number {
   return Math.floor(diff / (1000 * 60 * 60 * 24));
 }
 
-export function getDaysUntilDue(dueDate: Date | string): number {
+export function getDaysUntilDue(dueDate: Date | string | undefined | null): number {
+  if (!dueDate) return 0;
   const due = typeof dueDate === "string" ? new Date(dueDate) : dueDate;
+  if (isNaN(due.getTime())) return 0;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   due.setHours(0, 0, 0, 0);
@@ -56,7 +65,8 @@ export function getDaysUntilDue(dueDate: Date | string): number {
   return Math.floor(diff / (1000 * 60 * 60 * 24));
 }
 
-export function getInstallmentStatus(dueDate: Date | string): "overdue" | "due-soon" | "upcoming" | "paid" {
+export function getInstallmentStatus(dueDate: Date | string | undefined | null): "overdue" | "due-soon" | "upcoming" | "paid" {
+  if (!dueDate) return "upcoming";
   const daysOverdue = getDaysOverdue(dueDate);
   if (daysOverdue > 0) return "overdue";
   if (daysOverdue >= -3) return "due-soon";

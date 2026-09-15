@@ -22,8 +22,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Wallet,
+import { Wallet,
   TrendingUp,
   ArrowDownToLine,
   ArrowUpFromLine,
@@ -52,6 +51,7 @@ import {
   BadgePercent,
   Clock,
   Receipt,
+  Sparkles
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
@@ -126,13 +126,34 @@ export default function InvestorPortalPage() {
           setCustomers(cSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Customer)));
         });
 
-        const unsubHist = onSnapshot(query(collection(db, "investments"), where("investorId", "==", inv.id), orderBy("date", "desc")), (hSnap) => {
-          setInvestments(hSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Investment)));
-        });
+        const unsubHist = onSnapshot(query(collection(db, "investments"), where("investorId", "==", inv.id)), (hSnap) => {
+        let list = hSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Investment));
 
-        const unsubRec = onSnapshot(query(collection(db, "recoveries"), where("investorId", "==", inv.id), orderBy("date", "desc")), (rSnap) => {
-          setRecoveries(rSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Recovery)));
-        });
+        // Ensure initial investment record is displayed if missing
+        const hasInitial = list.some((i) => i.type === "initial");
+        if (!hasInitial && inv.totalInvestment > 0) {
+          const sumOfAdditional = list.filter((i) => i.type === "additional").reduce((s, i) => s + (i.amount || 0), 0);
+          const initialAmount = Math.max(0, inv.totalInvestment - sumOfAdditional);
+          if (initialAmount > 0) {
+            list.unshift({
+              id: "initial-" + inv.id,
+              investorId: inv.id,
+              investorName: inv.fullName,
+              amount: initialAmount,
+              type: "initial",
+              date: inv.createdAt || new Date().toISOString(),
+            } as Investment);
+          }
+        }
+
+        list = list.sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+        setInvestments(list);
+      });
+
+        const unsubRec = onSnapshot(query(collection(db, "recoveries"), where("investorId", "==", inv.id)), (rSnap) => {
+        const list = rSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Recovery)).sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+        setRecoveries(list);
+      });
 
         const unsubNotif = onSnapshot(query(collection(db, "notifications"), where("userId", "==", appUser.uid), orderBy("createdAt", "desc")), (nSnap) => {
           setNotifications(nSnap.docs.map((d) => ({ id: d.id, ...d.data() } as NotifType)));
@@ -749,8 +770,9 @@ export default function InvestorPortalPage() {
               <div className="space-y-3">
                 {customers.map((c) => {
                   const progress = c.sellingPrice > 0 ? Math.round((c.totalPaid / c.sellingPrice) * 100) : 0;
+                  const isCompleted = c.status === 'completed' || c.remainingAmount <= 0 || progress >= 100;
                   return (
-                    <div key={c.id} className="p-4 rounded-xl border border-border/50 bg-card/60 hover:border-primary/40 transition-all space-y-3">
+                    <div key={c.id} className={cn("p-4 rounded-xl border transition-all space-y-3", isCompleted ? "border-emerald-500/50 bg-emerald-500/5 shadow-md shadow-emerald-500/10" : "border-border/50 bg-card/60 hover:border-primary/40")}>
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         {/* Customer Info */}
                         <div className="flex items-center gap-3">
@@ -803,6 +825,42 @@ export default function InvestorPortalPage() {
                               {formatCurrency(c.expenses.reduce((s, e) => s + (e.investorShare ?? Math.round((e.amount || 0) * 0.5)), 0))}
                             </span>
                           </div>
+                        </div>
+                      )}
+
+                      {/* Celebration Banner for Completed Customer */}
+                      {isCompleted && (
+                        <div className="p-3 rounded-xl bg-gradient-to-r from-emerald-500/20 via-green-500/15 to-teal-500/20 border border-emerald-500/40 flex items-center justify-between text-xs font-semibold text-emerald-400 shadow-sm">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
+                              <Sparkles className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="font-bold text-xs text-emerald-300">🎉 Tamam Kistein Poori Ho Gayi Hain!</p>
+                              <p className="text-[10px] text-emerald-400/80 font-normal">Is customer ne apne mobile ({c.mobileCompany} {c.mobileModel}) ki saari installments 100% pay kar di hain.</p>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="bg-emerald-500/20 text-emerald-300 border-emerald-500/40 text-[10px] shrink-0">
+                            100% Cleared 🏆
+                          </Badge>
+                        </div>
+                      )}
+
+                      {/* Celebration Banner for Completed Customer */}
+                      {isCompleted && (
+                        <div className="p-3 rounded-xl bg-gradient-to-r from-emerald-500/20 via-green-500/15 to-teal-500/20 border border-emerald-500/40 flex items-center justify-between text-xs font-semibold text-emerald-400 shadow-sm">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
+                              <Sparkles className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="font-bold text-xs text-emerald-300">🎉 Tamam Kistein Poori Ho Gayi Hain!</p>
+                              <p className="text-[10px] text-emerald-400/80 font-normal">Is customer ne apne mobile ({c.mobileCompany} {c.mobileModel}) ki saari installments 100% pay kar di hain.</p>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="bg-emerald-500/20 text-emerald-300 border-emerald-500/40 text-[10px] shrink-0">
+                            100% Cleared 🏆
+                          </Badge>
                         </div>
                       )}
 
@@ -1025,7 +1083,24 @@ export default function InvestorPortalPage() {
                   <h4 className="text-xs font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5">
                     <Smartphone className="w-4 h-4" /> Device & Mobile Details
                   </h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                  {(() => {
+                        const totalSaleProfit = selectedCustomerDetail.profitAmount || ((selectedCustomerDetail.sellingPrice || 0) - (selectedCustomerDetail.purchasePrice || selectedCustomerDetail.investmentUsed || 0));
+                        const totalSaleExpenses = selectedCustomerDetail.expenses ? selectedCustomerDetail.expenses.reduce((s, e) => s + (e.amount || 0), 0) : 0;
+                        const netSaleProfit = Math.max(0, totalSaleProfit - totalSaleExpenses);
+                        const partnerRatio = investor?.sharingRatio || 50;
+                        const partnerProfitShare = Math.round(netSaleProfit * (partnerRatio / 100));
+
+                        return (
+                          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex justify-between items-center text-xs mb-3">
+                            <div>
+                              <span className="text-[11px] text-emerald-400 font-semibold block">Your Expected Profit ({partnerRatio}% share)</span>
+                              <span className="text-[10px] text-muted-foreground">Total deal profit: {formatCurrency(netSaleProfit)}</span>
+                            </div>
+                            <span className="font-extrabold text-emerald-400 text-base">{formatCurrency(partnerProfitShare)}</span>
+                          </div>
+                        );
+                      })()}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                     <div>
                       <span className="text-muted-foreground block text-[11px]">Brand / Company</span>
                       <span className="font-medium text-foreground">{selectedCustomerDetail.mobileCompany}</span>

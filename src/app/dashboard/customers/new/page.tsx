@@ -242,7 +242,9 @@ export default function NewSalePage() {
 
   const handleCopyCredentials = (user: { name: string; email: string; password?: string; role: string; phone?: string }) => {
     const roleTitle = user.role === "investor" ? "Investor / Partner" : user.role === "reseller" ? "Reseller / Member" : "Admin";
-    const text = `ðŸ”‘ *Brother Mobiles Portal Access Credentials*\n\nðŸ‘¤ *Name:* ${user.name}\nðŸ›¡ï¸ *Role:* ${roleTitle}\nðŸ“§ *Email/Username:* ${user.email}\nðŸ”’ *Password:* ${user.password || "N/A"}\nðŸŒ *Portal Link:* ${window.location.origin}\n\n_Brother Mobiles Shop Management System_`;
+    const pwd = (user.password && user.password !== "N/A") ? user.password : "As set during account creation";
+    const phoneStr = user.phone ? `\n📱 *Phone:* ${user.phone}` : "";
+    const text = `🔐 *Brother Mobiles Portal Access Credentials*\n\n👤 *Name:* ${user.name}${phoneStr}\n💼 *Role:* ${roleTitle}\n📧 *Email/Username:* ${user.email}\n🔑 *Password:* ${pwd}\n🌐 *Portal Link:* ${window.location.origin}\n\n_Brother Mobiles Shop Management System_`;
     navigator.clipboard.writeText(text);
     toast.success("Credentials clipboard par copy ho gaye!");
   };
@@ -485,9 +487,11 @@ export default function NewSalePage() {
       // Update investor balance
       if (calculations.selectedInvestor) {
         const investorRef = doc(db, "investors", selectedInvestorId);
+        const curAvail = typeof calculations.selectedInvestor.availableBalance === 'number' ? calculations.selectedInvestor.availableBalance : (calculations.selectedInvestor.totalInvestment || 0);
+        const curActive = calculations.selectedInvestor.activeInstallments || 0;
         await updateDoc(investorRef, {
-          availableBalance: calculations.selectedInvestor.availableBalance - calculations.investmentUsed,
-          activeInstallments: calculations.selectedInvestor.activeInstallments + 1,
+          availableBalance: Math.max(0, curAvail - calculations.investmentUsed),
+          activeInstallments: curActive + 1,
         });
       }
 

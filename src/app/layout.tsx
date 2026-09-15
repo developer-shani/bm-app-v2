@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import "./globals.css";
 import { Suspense } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -19,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen bg-background font-sans antialiased selection:bg-primary/20 selection:text-primary">
+      <body className="min-h-screen bg-background antialiased selection:bg-primary/20 selection:text-primary">
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

@@ -16,8 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Users,
+import { Users,
   Plus,
   Search,
   Phone,
@@ -31,6 +30,7 @@ import {
   CheckCircle2,
   CreditCard,
   Trash2,
+  Sparkles
 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, onSnapshot , doc, deleteDoc, addDoc } from "firebase/firestore";

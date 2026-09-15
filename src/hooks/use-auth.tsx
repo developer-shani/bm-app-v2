@@ -303,6 +303,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         createdAt: new Date().toISOString(),
         lastLogin: "",
         guideSeen: false,
+        password: (userData as any).password || password,
       };
 
       // Save user doc with 3s timeout

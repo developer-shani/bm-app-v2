@@ -97,6 +97,7 @@ export default function UsersPage() {
   const [editRole, setEditRole] = useState<"admin" | "investor" | "reseller">("investor");
   const [editStatus, setEditStatus] = useState("active");
   const [editRatio, setEditRatio] = useState("50");
+    const [editPassword, setEditPassword] = useState("");
   const [editSaving, setEditSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -108,6 +109,7 @@ export default function UsersPage() {
     setEditRole(user.role);
     setEditStatus(user.status);
     setEditRatio(String(user.sharingRatio || 50));
+      setEditPassword(user.password || "");
   };
 
   const handleSaveEdit = async () => {
@@ -115,18 +117,18 @@ export default function UsersPage() {
     setEditSaving(true);
     try {
       const collectionName = editUser.role === "investor" ? "investors" : editUser.role === "reseller" ? "resellers" : "users";
-      const updateData: any = { fullName: editName, phone: editPhone, email: editEmail, status: editStatus };
+      const updateData: any = { fullName: editName, phone: editPhone, email: editEmail, status: editStatus, password: editPassword };
       if (editUser.role === "investor") updateData.sharingRatio = parseFloat(editRatio) || 50;
       
       await updateDoc(doc(db, collectionName, editUser.id), updateData).catch(() => {});
       
       // Also update users collection if exists
       if (editUser.id) {
-        await updateDoc(doc(db, "users", editUser.id), { fullName: editName, name: editName, phone: editPhone, email: editEmail, status: editStatus, role: editRole }).catch(() => {});
+        await updateDoc(doc(db, "users", editUser.id), { fullName: editName, name: editName, phone: editPhone, email: editEmail, status: editStatus, role: editRole, password: editPassword }).catch(() => {});
       }
 
       // Update local state
-      setUsersList(prev => prev.map(u => u.id === editUser.id ? { ...u, name: editName, phone: editPhone, email: editEmail, role: editRole, status: editStatus, sharingRatio: parseFloat(editRatio) || 50 } : u));
+      setUsersList(prev => prev.map(u => u.id === editUser.id ? { ...u, name: editName, phone: editPhone, email: editEmail, role: editRole, status: editStatus, password: editPassword, sharingRatio: parseFloat(editRatio) || 50 } : u));
       toast.success(editName + " ki details update ho gayi!");
       setEditUser(null);
     } catch (e: any) {
@@ -164,7 +166,9 @@ export default function UsersPage() {
 
   const handleCopyCredentials = (user: { name: string; email: string; password?: string; role: string; phone?: string }) => {
     const roleTitle = user.role === "investor" ? "Investor / Partner" : user.role === "reseller" ? "Reseller / Member" : "Admin";
-    const text = `ðŸ”‘ *Brother Mobiles Portal Access Credentials*\n\nðŸ‘¤ *Name:* ${user.name}\nðŸ›¡ï¸ *Role:* ${roleTitle}\nðŸ“§ *Email/Username:* ${user.email}\nðŸ”’ *Password:* ${user.password || "N/A"}\nðŸŒ *Portal Link:* ${window.location.origin}\n\n_Brother Mobiles Shop Management System_`;
+    const pwdDisplay = user.password || "As set during account creation";
+    const phoneStr = user.phone ? `\n📱 *Phone:* ${user.phone}` : "";
+    const text = `🔐 *Brother Mobiles Portal Access Credentials*\n\n👤 *Name:* ${user.name}${phoneStr}\n💼 *Role:* ${roleTitle}\n📧 *Email/Username:* ${user.email}\n🔑 *Password:* ${pwdDisplay}\n🌐 *Portal Link:* ${window.location.origin}\n\n_Brother Mobiles Shop Management System_`;
     navigator.clipboard.writeText(text);
     toast.success("Credentials clipboard par copy ho gaye!");
   };
@@ -479,7 +483,7 @@ export default function UsersPage() {
       }
 
       toast.success(`Reseller Member (${resName}) add ho gaya!`);
-      const createdRes = { name: resName, email: resEmail || resPhone, password: resPassword || "N/A", role: "reseller", phone: resPhone };
+      const createdRes = { name: resName, email: finalEmail, password: finalPassword, role: "reseller", phone: resPhone };
 
       setResName(""); setResPhone(""); setResEmail(""); setResPassword(""); setResShopName("");
       setActiveTab("all");
@@ -628,7 +632,7 @@ export default function UsersPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filteredUsers.map((user) => (
-                <Card key={user.id} className="hover:shadow-md transition-all border-border/60">
+                <Card key={user.id} onClick={() => handleEditUser(user)} className="hover:shadow-lg transition-all border-border/60 hover:border-primary/40 hover:scale-[1.01] cursor-pointer group">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3">
@@ -1117,4 +1121,6 @@ export default function UsersPage() {
     </div>
   );
 }
+
+
 

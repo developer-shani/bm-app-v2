@@ -31,8 +31,12 @@ export default function DashboardLayout({
 
   if (loading || !appUser || appUser.role !== "admin") {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-3">
-        <Loader2 className="w-9 h-9 animate-spin text-primary" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
+        <div className="relative">
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          </div>
+        </div>
         <p className="text-sm font-medium text-muted-foreground">Verifying permissions...</p>
       </div>
     );
@@ -40,16 +44,16 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* Desktop sidebar (hidden on mobile via hidden md:flex) */}
+      {/* Desktop sidebar */}
       <AdminSidebar mobileOpen={mobileOpen} onCloseMobile={() => setMobileOpen(false)} />
 
-      {/* Main content: no left padding on mobile, 260px on desktop */}
-      <div className="pl-0 md:pl-[260px] min-h-screen flex flex-col pb-[72px] md:pb-0">
+      {/* Main content area */}
+      <div className="pl-0 md:pl-[260px] min-h-screen flex flex-col pb-[80px] md:pb-0">
         <AdminHeader onMenuToggle={() => setMobileOpen(!mobileOpen)} />
-        <main className="flex-1 p-3 sm:p-6 max-w-7xl mx-auto w-full">{children}</main>
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">{children}</main>
       </div>
 
-      {/* Mobile bottom quick nav (hidden on desktop via md:hidden) */}
+      {/* Mobile bottom nav */}
       <MobileBottomNav onMenuToggle={() => setMobileOpen(!mobileOpen)} />
     </div>
   );

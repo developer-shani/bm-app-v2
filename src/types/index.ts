@@ -5,6 +5,7 @@
 export type UserRole = "admin" | "investor" | "reseller";
 
 export interface AppUser {
+  password?: string;
   uid: string;
   email: string;
   fullName: string;
@@ -23,6 +24,7 @@ export interface AppUser {
 // INVESTOR
 // ============================================
 export interface Investor {
+  password?: string;
   id: string;
   userId: string;
   fullName: string;
@@ -138,6 +140,7 @@ export interface Recovery {
 // RESELLER / REFERRER
 // ============================================
 export interface Reseller {
+  password?: string;
   id: string;
   userId: string;
   fullName: string;

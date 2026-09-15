@@ -1,7 +1,7 @@
 "use client";
 export const dynamic = "force-dynamic";
 
-import { useEffect, useState } from "react";
+import { ChevronRight, useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,8 +34,8 @@ import { formatCurrency, formatDate, getInstallmentStatus, cn } from "@/lib/util
 
 function SkeletonStatsCard() {
   return (
-    <Card className="hover:shadow-md transition-all duration-300">
-      <CardContent className="p-6">
+    <Card className="pulse-card-glow">
+      <CardContent className="p-5">
         <div className="flex items-start justify-between">
           <div className="space-y-3 flex-1">
             <Skeleton className="h-3.5 w-24" />
@@ -49,44 +49,31 @@ function SkeletonStatsCard() {
   );
 }
 
-function StatsCard({
-  title,
-  value,
-  description,
-  icon: Icon,
-  trend,
-  trendValue,
-}: {
+interface StatCardProps {
   title: string;
   value: string;
   description: string;
   icon: any;
-  trend?: "up" | "down";
-  trendValue?: string;
-}) {
+  iconColor: string;
+  iconBg: string;
+  glowClass?: string;
+}
+
+function StatsCard({ title, value, description, icon: Icon, iconColor, iconBg, glowClass }: StatCardProps) {
   return (
-    <Card className="hover:shadow-md transition-all duration-300 hover:border-primary/20">
-      <CardContent className="p-6">
+    <Card className={cn("hover-lift group", glowClass)}>
+      <CardContent className="p-5">
         <div className="flex items-start justify-between">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</p>
             <p className="text-2xl font-bold tracking-tight">{value}</p>
-            <div className="flex items-center gap-1">
-              {trend && (
-                <span className={trend === "up" ? "text-green-500" : "text-red-500"}>
-                  {trend === "up" ? (
-                    <ArrowUpRight className="w-3.5 h-3.5 inline" />
-                  ) : (
-                    <ArrowDownRight className="w-3.5 h-3.5 inline" />
-                  )}
-                  <span className="text-xs font-medium ml-0.5">{trendValue}</span>
-                </span>
-              )}
-              <p className="text-xs text-muted-foreground">{description}</p>
-            </div>
+            <p className="text-[11px] text-muted-foreground font-medium">{description}</p>
           </div>
-          <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-primary/10 border border-primary/20">
-            <Icon className="w-5 h-5 text-primary" />
+          <div className={cn(
+            "flex items-center justify-center w-11 h-11 rounded-xl transition-transform group-hover:scale-110",
+            iconBg
+          )}>
+            <Icon className={cn("w-5 h-5", iconColor)} />
           </div>
         </div>
       </CardContent>
@@ -103,7 +90,6 @@ export default function DashboardPage() {
   const [loadedCount, setLoadedCount] = useState(0);
 
   useEffect(() => {
-    // 1. Real-time Customers Listener
     const qCust = query(collection(db, "customers"), orderBy("createdAt", "desc"));
     const unsubCust = onSnapshot(qCust, (snap) => {
       const data = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Customer));
@@ -114,7 +100,6 @@ export default function DashboardPage() {
       setLoading(false);
     }, (err) => console.warn("Cust realtime sync warn:", err));
 
-    // 2. Real-time Investors Listener
     const qInv = query(collection(db, "investors"), orderBy("createdAt", "desc"));
     const unsubInv = onSnapshot(qInv, (snap) => {
       const data = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Investor));
@@ -125,7 +110,6 @@ export default function DashboardPage() {
       setLoadedCount(prev => prev + 1);
     }, (err) => console.warn("Inv realtime sync warn:", err));
 
-    // 3. Real-time Resellers Listener
     const qRes = query(collection(db, "resellers"), orderBy("createdAt", "desc"));
     const unsubRes = onSnapshot(qRes, (snap) => {
       const data = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Reseller));
@@ -136,7 +120,6 @@ export default function DashboardPage() {
       setLoadedCount(prev => prev + 1);
     }, (err) => console.warn("Res realtime sync warn:", err));
 
-    // 4. Real-time Recoveries Listener
     const qRec = query(collection(db, "recoveries"), orderBy("date", "desc"));
     const unsubRec = onSnapshot(qRec, (snap) => {
       const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -152,8 +135,6 @@ export default function DashboardPage() {
     };
   }, []);
 
-
-  // Set loading false only after ALL 4 data sources have loaded
   useEffect(() => {
     if (loadedCount >= 4) {
       setLoading(false);
@@ -182,175 +163,135 @@ export default function DashboardPage() {
     })
     .reduce((sum, r) => sum + (r.amount || 0), 0);
 
-
   if (loading) {
     return (
-      <div className="space-y-6 animate-fade-in">
+      <div className="space-y-6 animate-page">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <Skeleton className="h-7 w-40 mb-2" />
+            <Skeleton className="h-7 w-48 mb-2" />
             <Skeleton className="h-4 w-64" />
           </div>
           <div className="flex items-center gap-2">
-            <Skeleton className="h-9 w-28 rounded-lg" />
-            <Skeleton className="h-9 w-24 rounded-lg" />
+            <Skeleton className="h-9 w-28 rounded-xl" />
+            <Skeleton className="h-9 w-24 rounded-xl" />
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-          <SkeletonStatsCard />
-          <SkeletonStatsCard />
-          <SkeletonStatsCard />
-          <SkeletonStatsCard />
-          <SkeletonStatsCard />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          <Card><CardContent className="p-6 space-y-3"><Skeleton className="h-5 w-32" /><Skeleton className="h-8 w-20" /><Skeleton className="h-3 w-40" /></CardContent></Card>
-          <Card><CardContent className="p-6 space-y-3"><Skeleton className="h-5 w-32" /><Skeleton className="h-8 w-20" /><Skeleton className="h-3 w-40" /></CardContent></Card>
-          <Card><CardContent className="p-6 space-y-3"><Skeleton className="h-5 w-32" /><Skeleton className="h-8 w-20" /><Skeleton className="h-3 w-40" /></CardContent></Card>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Card><CardHeader><Skeleton className="h-5 w-40" /></CardHeader><CardContent className="space-y-3">{[1,2,3].map(i => <div key={i} className="flex items-center gap-3 p-3 border rounded-lg"><Skeleton className="w-8 h-8 rounded-full" /><div className="flex-1 space-y-1.5"><Skeleton className="h-3.5 w-28" /><Skeleton className="h-3 w-40" /></div><Skeleton className="h-5 w-16 rounded-full" /></div>)}</CardContent></Card>
-          <Card><CardHeader><Skeleton className="h-5 w-40" /></CardHeader><CardContent className="space-y-3">{[1,2,3].map(i => <div key={i} className="flex items-center gap-3 p-3 border rounded-lg"><Skeleton className="w-8 h-8 rounded-full" /><div className="flex-1 space-y-1.5"><Skeleton className="h-3.5 w-28" /><Skeleton className="h-3 w-40" /></div><Skeleton className="h-5 w-16 rounded-full" /></div>)}</CardContent></Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <SkeletonStatsCard key={i} />
+          ))}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Page Title & Live Badge */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div className="space-y-6 animate-page">
+      {/* ===== Page Header ===== */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Dashboard</h1>
-            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px] gap-1 px-2 py-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Live Sync Active
-            </Badge>
-          </div>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">
-            Real-time business performance across all devices
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
+            <span className="gradient-text">Dashboard</span>
+            <Sparkles className="w-5 h-5 text-amber-500" />
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Real-time business overview — {customers.length} customers tracked
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/dashboard/recovery" className="flex-1 sm:flex-none">
-            <Button variant="outline" size="sm" className="w-full gap-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 text-xs sm:text-sm h-9">
-              <CreditCard className="w-3.5 h-3.5" />
-              Add Recovery
+          <Link href="/dashboard/customers/new">
+            <Button size="sm" className="gap-1.5 shadow-md shadow-primary/20">
+              <Plus className="w-4 h-4" />
+              New Sale
             </Button>
           </Link>
-          <Link href="/dashboard/customers/new" className="flex-1 sm:flex-none">
-            <Button size="sm" className="w-full gap-1.5 gradient-primary text-xs sm:text-sm h-9">
-              <Plus className="w-3.5 h-3.5" />
-              New Sale
+          <Link href="/dashboard/investors/new">
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <Wallet className="w-4 h-4" />
+              Add Investor
             </Button>
           </Link>
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-        <StatsCard
-          title="Total Investment"
-          value={formatCurrency(totalInvestment)}
-          description="From all investors"
-          icon={Wallet}
-          trend="up"
-          trendValue="Live"
-        />
-        <StatsCard
-          title="Total Investors"
-          value={investors.length.toString()}
-          description="Active capital partners"
-          icon={Handshake}
-          trend="up"
-          trendValue="Live"
-        />
-        <StatsCard
-          title="Total Expected Profit"
-          value={formatCurrency(totalProfit)}
-          description="Net profit pipeline"
-          icon={TrendingUp}
-          trend="up"
-          trendValue="Live"
-        />
-        <StatsCard
-          title="Total Customers"
-          value={customers.length.toString()}
-          description="All time customers"
-          icon={Users}
-          trend="up"
-          trendValue="Live"
-        />
-        <StatsCard
-          title="Active Installments"
-          value={activeInstallments.toString()}
-          description="Currently running"
-          icon={CreditCard}
-        />
+      {/* ===== Stats Grid ===== */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        <Link href="/dashboard/customers" className="block transition-transform hover:scale-[1.02]">
+          <StatsCard
+            title="Active Sales"
+            value={String(activeInstallments)}
+            description={`${customers.length} total customers →`}
+            icon={Users}
+            iconColor="text-blue-500"
+            iconBg="bg-blue-500/10 border border-blue-500/20"
+            glowClass="stat-glow-blue"
+          />
+        </Link>
+        <Link href="/dashboard/investors" className="block transition-transform hover:scale-[1.02]">
+          <StatsCard
+            title="Total Investment"
+            value={formatCurrency(totalInvestment)}
+            description={`${investors.length} investors →`}
+            icon={Wallet}
+            iconColor="text-violet-500"
+            iconBg="bg-violet-500/10 border border-violet-500/20"
+            glowClass="stat-glow-violet"
+          />
+        </Link>
+        <Link href="/dashboard/recovery" className="block transition-transform hover:scale-[1.02]">
+          <StatsCard
+            title="This Month"
+            value={formatCurrency(thisMonthCollected)}
+            description="Recovery collected →"
+            icon={IndianRupee}
+            iconColor="text-emerald-500"
+            iconBg="bg-emerald-500/10 border border-emerald-500/20"
+            glowClass="stat-glow-green"
+          />
+        </Link>
+        <Link href="/dashboard/customers" className="block transition-transform hover:scale-[1.02]">
+          <StatsCard
+            title="Overdue"
+            value={String(overdueCount)}
+            description="Installments overdue →"
+            icon={AlertTriangle}
+            iconColor="text-red-500"
+            iconBg="bg-red-500/10 border border-red-500/20"
+            glowClass="stat-glow-red"
+          />
+        </Link>
+        <Link href="/dashboard/customers" className="block transition-transform hover:scale-[1.02]">
+          <StatsCard
+            title="Due Soon"
+            value={String(dueSoonCount)}
+            description="Within 3 days →"
+            icon={Clock}
+            iconColor="text-amber-500"
+            iconBg="bg-amber-500/10 border border-amber-500/20"
+            glowClass="stat-glow-yellow"
+          />
+        </Link>
       </div>
 
-      {/* Alert Section */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-<Card className="border-green-500/20 bg-green-500/5 hover:shadow-md transition-all">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-green-500/15">
-                <IndianRupee className="w-5 h-5 text-green-500" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-green-500">This Month Collected</p>
-                <p className="text-2xl font-bold">{formatCurrency(thisMonthCollected)}</p>
-                <p className="text-xs text-muted-foreground">Real-time recovery total</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-<Card className="border-red-500/20 bg-red-500/5 hover:shadow-md transition-all">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-red-500/15">
-                <AlertTriangle className="w-5 h-5 text-red-500" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-red-500">Overdue</p>
-                <p className="text-2xl font-bold">{overdueCount}</p>
-                <p className="text-xs text-muted-foreground">Installments overdue</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-<Card className="border-yellow-500/20 bg-yellow-500/5 hover:shadow-md transition-all">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-yellow-500/15">
-                <Clock className="w-5 h-5 text-yellow-500" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-yellow-500">Due Soon</p>
-                <p className="text-2xl font-bold">{dueSoonCount}</p>
-                <p className="text-xs text-muted-foreground">Within 3 days</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Content Grid */}
+      {/* ===== Content Grid ===== */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Customers */}
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base">Recent Customers</CardTitle>
-                <CardDescription>Latest installment sales</CardDescription>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/10">
+                  <Users className="w-4 h-4 text-blue-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-sm font-semibold">Recent Customers</CardTitle>
+                  <CardDescription className="text-xs">Latest installment sales</CardDescription>
+                </div>
               </div>
               <Link href="/dashboard/customers">
-                <Button variant="ghost" size="sm" className="text-xs">
+                <Button variant="ghost" size="sm" className="text-xs gap-1 text-primary hover:text-primary">
                   View All
+                  <ArrowUpRight className="w-3 h-3" />
                 </Button>
               </Link>
             </div>
@@ -358,8 +299,8 @@ export default function DashboardPage() {
           <CardContent>
             {customers.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 text-center">
-                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
-                  <Users className="w-6 h-6 text-muted-foreground" />
+                <div className="w-14 h-14 rounded-2xl bg-muted/80 flex items-center justify-center mb-3">
+                  <Users className="w-7 h-7 text-muted-foreground" />
                 </div>
                 <p className="text-sm font-medium text-muted-foreground">No customers yet</p>
                 <p className="text-xs text-muted-foreground mt-1 mb-4">
@@ -373,30 +314,47 @@ export default function DashboardPage() {
                 </Link>
               </div>
             ) : (
-              <div className="space-y-3">
-                {customers.slice(0, 5).map((c) => (
-                  <div key={c.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border hover:bg-muted/60 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
-                        {c.name.charAt(0)}
+              <div className="space-y-2">
+                {customers.slice(0, 5).map((c) => {
+                  const status = c.status === "active" ? getInstallmentStatus(c.nextDueDate) : "paid";
+                  return (
+                    <Link href={`/dashboard/customers/${c.id}`} key={c.id} className="block">
+                      <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border/40 hover:bg-blue-500/10 hover:border-blue-500/40 hover:scale-[1.01] transition-all cursor-pointer group shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 text-primary flex items-center justify-center font-bold text-xs border border-blue-500/10">
+                            {(c.name || "C").charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold group-hover:text-primary transition-colors flex items-center gap-1.5">
+                              <span>{c.name || "Customer"}</span>
+                              <span className="text-[10px] text-muted-foreground font-mono bg-background/60 px-1 rounded">#{c.idNumber}</span>
+                            </p>
+                            <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                              <Smartphone className="w-3 h-3 text-primary" /> {c.mobileCompany} {c.mobileModel}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right flex items-center gap-3">
+                          <div>
+                            <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                              {formatCurrency(c.monthlyInstallment)}/mo
+                            </p>
+                            <p className="text-[10px] text-muted-foreground">
+                              Rem: {formatCurrency(c.remainingAmount)}
+                            </p>
+                          </div>
+                          {status === "overdue" && (
+                            <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" title="Overdue" />
+                          )}
+                          {status === "due-soon" && (
+                            <div className="w-2.5 h-2.5 rounded-full bg-amber-500" title="Due Soon" />
+                          )}
+                          <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs font-bold">{c.name}</p>
-                        <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                          <Smartphone className="w-3 h-3" /> {c.mobileCompany} {c.mobileModel}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                        {formatCurrency(c.monthlyInstallment)} / mo
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        Rem: {formatCurrency(c.remainingAmount)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </CardContent>
@@ -406,13 +364,19 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base">Investors Overview</CardTitle>
-                <CardDescription>Capital & balance status</CardDescription>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-violet-500/10">
+                  <Wallet className="w-4 h-4 text-violet-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-sm font-semibold">Investors Overview</CardTitle>
+                  <CardDescription className="text-xs">Capital & balance status</CardDescription>
+                </div>
               </div>
               <Link href="/dashboard/investors">
-                <Button variant="ghost" size="sm" className="text-xs">
+                <Button variant="ghost" size="sm" className="text-xs gap-1 text-primary hover:text-primary">
                   View All
+                  <ArrowUpRight className="w-3 h-3" />
                 </Button>
               </Link>
             </div>
@@ -420,8 +384,8 @@ export default function DashboardPage() {
           <CardContent>
             {investors.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 text-center">
-                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
-                  <Wallet className="w-6 h-6 text-muted-foreground" />
+                <div className="w-14 h-14 rounded-2xl bg-muted/80 flex items-center justify-center mb-3">
+                  <Wallet className="w-7 h-7 text-muted-foreground" />
                 </div>
                 <p className="text-sm font-medium text-muted-foreground">No investors yet</p>
                 <p className="text-xs text-muted-foreground mt-1 mb-4">
@@ -435,30 +399,50 @@ export default function DashboardPage() {
                 </Link>
               </div>
             ) : (
-              <div className="space-y-3">
-                {investors.slice(0, 5).map((inv) => (
-                  <div key={inv.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border hover:bg-muted/60 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs border border-emerald-500/20">
-                        <Wallet className="w-4 h-4" />
+              <div className="space-y-2">
+                {investors.slice(0, 5).map((inv) => {
+                  const totalInv = inv.totalInvestment || 0;
+                  const availBal = inv.availableBalance ?? totalInv;
+                  const usagePercent = totalInv > 0
+                    ? Math.round(((totalInv - availBal) / totalInv) * 100)
+                    : 0;
+                  return (
+                    <Link href="/dashboard/investors" key={inv.id} className="block">
+                      <div className="p-3 rounded-xl bg-muted/30 border border-border/40 hover:bg-violet-500/10 hover:border-violet-500/40 hover:scale-[1.01] transition-all cursor-pointer group shadow-sm">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 text-violet-600 dark:text-violet-400 flex items-center justify-center font-bold text-xs border border-violet-500/10">
+                              <Wallet className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold group-hover:text-violet-500 transition-colors flex items-center gap-1">
+                                {inv.fullName || "Investor"}
+                              </p>
+                              <p className="text-[11px] text-muted-foreground">
+                                Ratio: {inv.sharingRatio}% / {100 - inv.sharingRatio}%
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right flex items-center gap-2">
+                            <div>
+                              <p className="text-xs font-bold text-primary">
+                                {formatCurrency(inv.totalInvestment)}
+                              </p>
+                              <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                                Avail: {formatCurrency(inv.availableBalance ?? inv.totalInvestment)}
+                              </p>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-violet-500 group-hover:translate-x-1 transition-all" />
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Progress value={usagePercent} className="h-1.5 flex-1" />
+                          <span className="text-[10px] text-muted-foreground font-medium w-8 text-right">{usagePercent}%</span>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs font-bold">{inv.fullName}</p>
-                        <p className="text-[11px] text-muted-foreground">
-                          Ratio: {inv.sharingRatio}% / {100 - inv.sharingRatio}%
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs font-bold text-primary">
-                        {formatCurrency(inv.totalInvestment)}
-                      </p>
-                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400">
-                        Avail: {formatCurrency(inv.availableBalance)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </CardContent>

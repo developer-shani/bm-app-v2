@@ -41,9 +41,10 @@ export default function AddResellerPage() {
 
   const handleCopyCredentials = (u: typeof shareCredsUser) => {
     if (!u) return;
-    const origin = typeof window !== "undefined" ? window.location.origin : "https://bm-app-v2.vercel.app";
-    const phoneStr = u.phone ? "\n📱 *Phone:* " + u.phone : "";
-    const text = "🔑 *Brother Mobiles Portal Access Credentials*\n\n👤 *Name:* " + u.name + "\n🛡️ *Role:* Reseller / Member" + phoneStr + "\n📧 *Email/Username:* " + u.email + "\n🔒 *Password:* " + (u.password || "N/A") + "\n🌐 *Portal Link:* " + origin + "\n\n_Brother Mobiles Shop Management System_";
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://brother-mobiles.vercel.app";
+    const pwd = (u.password && u.password !== "N/A") ? u.password : "As set during account creation";
+    const phoneStr = u.phone ? `\n📱 *Phone:* ${u.phone}` : "";
+    const text = `🔐 *Brother Mobiles Portal Access Credentials*\n\n👤 *Name:* ${u.name}${phoneStr}\n💼 *Role:* Reseller / Member\n📧 *Email/Username:* ${u.email}\n🔑 *Password:* ${pwd}\n🌐 *Portal Link:* ${origin}\n\n_Brother Mobiles Shop Management System_`;
     navigator.clipboard.writeText(text);
     toast.success("Credentials clipboard par copy ho gaye!");
   };
