@@ -67,7 +67,7 @@ import {
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Investor, Customer, Investment, Notification as NotifType, Recovery } from "@/types";
-import { formatCurrency, formatDate, formatDateTime } from "@/lib/utils";
+import { cn, formatCurrency, formatDate, formatDateTime } from "@/lib/utils";
 import { calculateWithdrawalImpact } from "@/lib/calculations";
 import { toast } from "sonner";
 import { amountToUrduWords } from "@/lib/amount-words";
