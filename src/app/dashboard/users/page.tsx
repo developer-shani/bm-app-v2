@@ -184,6 +184,8 @@ export default function UsersPage() {
     const formattedPhone = cleanPhone.startsWith("0") ? "92" + cleanPhone.slice(1) : cleanPhone;
     window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(text)}`, "_blank");
   };
+  const [invLoading, setInvLoading] = useState(false);
+  const [invName, setInvName] = useState("");
   const [invCnic, setInvCnic] = useState("");
   const [invPhone, setInvPhone] = useState("");
   const [invEmail, setInvEmail] = useState("");
