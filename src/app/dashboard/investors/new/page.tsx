@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { db, storage } from "@/lib/firebase";
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, updateDoc, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -177,8 +177,7 @@ export default function AddInvestorPage() {
           const agreementRef = ref(storage, `agreements/investors/${investorDocId}_${Date.now()}`);
           await uploadBytes(agreementRef, agreementFile);
           const agreementUrl = await getDownloadURL(agreementRef);
-          const { updateDoc, doc: docFn } = await import("firebase/firestore");
-          await updateDoc(docFn(db, "investors", investorDocId), { agreementImage: agreementUrl });
+          await updateDoc(doc(db, "investors", investorDocId), { agreementImage: agreementUrl });
         } catch (e) {
           console.warn("Agreement upload (background):", e);
         }
@@ -190,8 +189,7 @@ export default function AddInvestorPage() {
           const profileRef = ref(storage, `profiles/investors/${investorDocId}_${Date.now()}`);
           await uploadBytes(profileRef, profilePicFile);
           const profileImageUrl = await getDownloadURL(profileRef);
-          const { updateDoc, doc: docFn } = await import("firebase/firestore");
-          await updateDoc(docFn(db, "investors", investorDocId), { profileImage: profileImageUrl });
+          await updateDoc(doc(db, "investors", investorDocId), { profileImage: profileImageUrl });
         } catch (e) {
           console.warn("Profile pic upload (background):", e);
         }
