@@ -52,7 +52,7 @@ import { db, storage } from "@/lib/firebase";
 import { collection, getDocs, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useAuth } from "@/hooks/use-auth";
-import { formatCurrency, cn } from "@/lib/utils";
+import { formatCurrency, cn, getPortalUrl } from "@/lib/utils";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -168,22 +168,19 @@ export default function UsersPage() {
     const roleTitle = user.role === "investor" ? "Investor / Partner" : user.role === "reseller" ? "Reseller / Member" : "Admin";
     const pwdDisplay = user.password || "As set during account creation";
     const phoneStr = user.phone ? `\n📱 *Phone:* ${user.phone}` : "";
-    const text = `🔐 *Brother Mobiles Portal Access Credentials*\n\n👤 *Name:* ${user.name}${phoneStr}\n💼 *Role:* ${roleTitle}\n📧 *Email/Username:* ${user.email}\n🔑 *Password:* ${pwdDisplay}\n🌐 *Portal Link:* ${window.location.origin}\n\n_Brother Mobiles Shop Management System_`;
+    const text = `🔐 *Brother Mobiles Portal Access Credentials*\n\n👤 *Name:* ${user.name}${phoneStr}\n💼 *Role:* ${roleTitle}\n📧 *Email/Username:* ${user.email}\n🔑 *Password:* ${pwdDisplay}\n🌐 *Portal Link:* ${getPortalUrl()}\n\n_Brother Mobiles Shop Management System_`;
     navigator.clipboard.writeText(text);
-    toast.success("Credentials clipboard par copy ho gaye!");
   };
 
   const handleShareWhatsApp = (user: { name: string; email: string; password?: string; role: string; phone?: string }) => {
     const roleTitle = user.role === "investor" ? "Investor / Partner" : user.role === "reseller" ? "Reseller / Member" : "Admin";
-    const text = `ðŸ”‘ *Brother Mobiles Portal Access Credentials*\n\nðŸ‘¤ *Name:* ${user.name}\nðŸ›¡ï¸ *Role:* ${roleTitle}\nðŸ“§ *Email/Username:* ${user.email}\nðŸ”’ *Password:* ${user.password || "N/A"}\nðŸŒ *Portal Link:* ${window.location.origin}`;
+    const pwdDisplay = user.password || "As set during account creation";
+    const phoneStr = user.phone ? `\n📱 *Phone:* ${user.phone}` : "";
+    const text = `🔐 *Brother Mobiles Portal Access Credentials*\n\n👤 *Name:* ${user.name}${phoneStr}\n💼 *Role:* ${roleTitle}\n📧 *Email/Username:* ${user.email}\n🔑 *Password:* ${pwdDisplay}\n🌐 *Portal Link:* ${getPortalUrl()}\n\n_Brother Mobiles Shop Management System_`;
     const cleanPhone = (user.phone || "").replace(/[^0-9]/g, "");
     const formattedPhone = cleanPhone.startsWith("0") ? "92" + cleanPhone.slice(1) : cleanPhone;
     window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(text)}`, "_blank");
   };
-
-  // Form State: Add Investor
-  const [invLoading, setInvLoading] = useState(false);
-  const [invName, setInvName] = useState("");
   const [invCnic, setInvCnic] = useState("");
   const [invPhone, setInvPhone] = useState("");
   const [invEmail, setInvEmail] = useState("");
@@ -1081,10 +1078,6 @@ export default function UsersPage() {
                 <span className="font-bold text-foreground">{shareCredsUser.name}</span>
               </div>
               <div className="flex justify-between items-center text-xs border-b pb-2">
-                <span className="text-muted-foreground font-semibold">Role:</span>
-                <Badge variant="secondary" className="capitalize text-[10px]">{shareCredsUser.role}</Badge>
-              </div>
-              <div className="flex justify-between items-center text-xs border-b pb-2">
                 <span className="text-muted-foreground font-semibold">Email / Username:</span>
                 <span className="font-mono text-primary font-bold">{shareCredsUser.email}</span>
               </div>
@@ -1094,8 +1087,8 @@ export default function UsersPage() {
               </div>
               <div className="flex justify-between items-center text-xs">
                 <span className="text-muted-foreground font-semibold">Portal Link:</span>
-                <span className="font-mono text-[11px] text-muted-foreground truncate max-w-[200px]">
-                  {typeof window !== "undefined" ? window.location.origin : "https://bm-app.vercel.app"}
+                <span className="font-mono text-[11px] text-primary font-medium truncate max-w-[200px]">
+                  {getPortalUrl()}
                 </span>
               </div>
             </div>
@@ -1121,6 +1114,3 @@ export default function UsersPage() {
     </div>
   );
 }
-
-
-

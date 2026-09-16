@@ -72,3 +72,11 @@ export function getInstallmentStatus(dueDate: Date | string | undefined | null):
   if (daysOverdue >= -3) return "due-soon";
   return "upcoming";
 }
+
+export function getPortalUrl(): string {
+  if (typeof window === "undefined") return "https://installmentsalesmanager.web.app";
+  if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+    return window.location.origin;
+  }
+  return "https://installmentsalesmanager.web.app";
+}

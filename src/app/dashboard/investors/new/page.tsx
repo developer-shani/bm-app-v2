@@ -34,6 +34,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { amountToUrduWords } from "@/lib/amount-words";
+import { getPortalUrl } from "@/lib/utils";
 
 export default function AddInvestorPage() {
   const router = useRouter();
@@ -44,6 +45,7 @@ export default function AddInvestorPage() {
 
   // Form state
   const [fullName, setFullName] = useState("");
+  const [cnic, setCnic] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -63,8 +65,8 @@ export default function AddInvestorPage() {
   const [profilePicPreview, setProfilePicPreview] = useState<string>("");
   const [showProfilePic, setShowProfilePic] = useState(false);
 
-    const handleCopyCredentials = () => {
-    const origin = typeof window !== "undefined" ? window.location.origin : "https://bm-app-v2.vercel.app";
+  const handleCopyCredentials = () => {
+    const origin = getPortalUrl();
     const phoneStr = phone ? `\n📱 *Phone:* ${phone}` : "";
     const text = `🔑 *Brother Mobiles Portal Access Credentials*\n\n👤 *Name:* ${fullName}\n🛡️ *Role:* Investor / Partner${phoneStr}\n📧 *Email/Username:* ${email}\n🔒 *Password:* ${password || "N/A"}\n🌐 *Portal Link:* ${origin}\n\n_Brother Mobiles Shop Management System_`;
     navigator.clipboard.writeText(text);

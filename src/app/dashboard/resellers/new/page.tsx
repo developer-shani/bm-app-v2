@@ -21,6 +21,7 @@ import { db } from "@/lib/firebase";
 import { collection, addDoc } from "firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { getPortalUrl } from "@/lib/utils";
 
 export default function AddResellerPage() {
   const router = useRouter();
@@ -30,18 +31,20 @@ export default function AddResellerPage() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [shopName, setShopName] = useState("");
+  const [commissionRate, setCommissionRate] = useState("5");
 
+  // Modal state for sharing credentials
   const [shareCredsUser, setShareCredsUser] = useState<{
     name: string;
     email: string;
     password?: string;
-    role: string;
     phone?: string;
   } | null>(null);
 
   const handleCopyCredentials = (u: typeof shareCredsUser) => {
     if (!u) return;
-    const origin = typeof window !== "undefined" ? window.location.origin : "https://brother-mobiles.vercel.app";
+    const origin = getPortalUrl();
     const pwd = (u.password && u.password !== "N/A") ? u.password : "As set during account creation";
     const phoneStr = u.phone ? `\n📱 *Phone:* ${u.phone}` : "";
     const text = `🔐 *Brother Mobiles Portal Access Credentials*\n\n👤 *Name:* ${u.name}${phoneStr}\n💼 *Role:* Reseller / Member\n📧 *Email/Username:* ${u.email}\n🔑 *Password:* ${pwd}\n🌐 *Portal Link:* ${origin}\n\n_Brother Mobiles Shop Management System_`;
@@ -51,9 +54,10 @@ export default function AddResellerPage() {
 
   const handleShareWhatsApp = (u: typeof shareCredsUser) => {
     if (!u) return;
-    const origin = typeof window !== "undefined" ? window.location.origin : "https://bm-app-v2.vercel.app";
-    const phoneStr = u.phone ? "\n📱 *Phone:* " + u.phone : "";
-    const text = "🔑 *Brother Mobiles Portal Access Credentials*\n\n👤 *Name:* " + u.name + "\n🛡️ *Role:* Reseller / Member" + phoneStr + "\n📧 *Email/Username:* " + u.email + "\n🔒 *Password:* " + (u.password || "N/A") + "\n🌐 *Portal Link:* " + origin;
+    const origin = getPortalUrl();
+    const pwd = (u.password && u.password !== "N/A") ? u.password : "As set during account creation";
+    const phoneStr = u.phone ? `\n📱 *Phone:* ${u.phone}` : "";
+    const text = `🔐 *Brother Mobiles Portal Access Credentials*\n\n👤 *Name:* ${u.name}${phoneStr}\n💼 *Role:* Reseller / Member\n📧 *Email/Username:* ${u.email}\n🔑 *Password:* ${pwd}\n🌐 *Portal Link:* ${origin}\n\n_Brother Mobiles Shop Management System_`;
     const cleanPhone = (u.phone || "").replace(/[^0-9]/g, "");
     const formattedPhone = cleanPhone.startsWith("0") ? "92" + cleanPhone.slice(1) : cleanPhone;
     window.open("https://wa.me/" + formattedPhone + "?text=" + encodeURIComponent(text), "_blank");
