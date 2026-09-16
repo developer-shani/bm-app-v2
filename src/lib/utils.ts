@@ -83,8 +83,11 @@ export function getPortalUrl(): string {
 
 export function getPortalUrlWithCreds(email?: string, password?: string): string {
   const baseUrl = getPortalUrl();
-  if (!email || !password || password === "N/A" || password.includes("As set during")) {
-    return baseUrl;
+  if (!email) return baseUrl;
+
+  let url = `${baseUrl}/?email=${encodeURIComponent(email)}`;
+  if (password && password !== "N/A" && !password.includes("As set during")) {
+    url += `&password=${encodeURIComponent(password)}`;
   }
-  return `${baseUrl}/?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+  return url;
 }

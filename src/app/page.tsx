@@ -59,19 +59,21 @@ export default function LoginPage() {
         const urlEmail = params.get("email") || params.get("u");
         const urlPassword = params.get("password") || params.get("p");
 
-        if (urlEmail && urlPassword) {
+        if (urlEmail) {
           setAutoLoginDone(true);
           setEmail(urlEmail);
-          setPassword(urlPassword);
-          setIsLoading(true);
-          setError("");
-          signIn(urlEmail, urlPassword)
-            .catch((err: any) => {
-              setError(err?.message || "Auto-login me masla aya. Credentials verify karein.");
-            })
-            .finally(() => {
-              setIsLoading(false);
-            });
+          if (urlPassword) {
+            setPassword(urlPassword);
+            setIsLoading(true);
+            setError("");
+            signIn(urlEmail, urlPassword)
+              .catch((err: any) => {
+                setError(err?.message || "Credentials fill ho gaye hain. Sign In button par click karein.");
+              })
+              .finally(() => {
+                setIsLoading(false);
+              });
+          }
         }
       } catch (e) {
         console.warn("Auto-login URL parse error:", e);

@@ -168,7 +168,7 @@ export default function UsersPage() {
     const roleTitle = user.role === "investor" ? "Investor / Partner" : user.role === "reseller" ? "Reseller / Member" : "Admin";
     const pwdDisplay = user.password || "As set during account creation";
     const phoneStr = user.phone ? `\n📱 *Phone:* ${user.phone}` : "";
-    const portalUrl = getPortalUrlWithCreds(user.email, pwdDisplay);
+    const portalUrl = getPortalUrlWithCreds(user.email, user.password || pwdDisplay);
     const text = `🔐 *Brother Mobiles Portal Access Credentials*\n\n👤 *Name:* ${user.name}${phoneStr}\n💼 *Role:* ${roleTitle}\n📧 *Email/Username:* ${user.email}\n🔑 *Password:* ${pwdDisplay}\n🌐 *Direct Login Link:* ${portalUrl}\n\n_Brother Mobiles Shop Management System_`;
     navigator.clipboard.writeText(text);
     toast.success("Credentials clipboard par copy ho gaye!");
@@ -178,7 +178,7 @@ export default function UsersPage() {
     const roleTitle = user.role === "investor" ? "Investor / Partner" : user.role === "reseller" ? "Reseller / Member" : "Admin";
     const pwdDisplay = user.password || "As set during account creation";
     const phoneStr = user.phone ? `\n📱 *Phone:* ${user.phone}` : "";
-    const portalUrl = getPortalUrlWithCreds(user.email, pwdDisplay);
+    const portalUrl = getPortalUrlWithCreds(user.email, user.password || pwdDisplay);
     const text = `🔐 *Brother Mobiles Portal Access Credentials*\n\n👤 *Name:* ${user.name}${phoneStr}\n💼 *Role:* ${roleTitle}\n📧 *Email/Username:* ${user.email}\n🔑 *Password:* ${pwdDisplay}\n🌐 *Direct Login Link:* ${portalUrl}\n\n_Brother Mobiles Shop Management System_`;
     const cleanPhone = (user.phone || "").replace(/[^0-9]/g, "");
     const formattedPhone = cleanPhone.startsWith("0") ? "92" + cleanPhone.slice(1) : cleanPhone;
