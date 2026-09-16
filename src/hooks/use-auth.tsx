@@ -279,17 +279,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   ): Promise<string> => {
     let secondaryApp;
     try {
-      const existingSecondary = getApps().find(app => app.name === "__userCreation");
-      if (existingSecondary) {
-        try { await deleteApp(existingSecondary); } catch (e) {}
-      }
-      secondaryApp = initializeApp(firebaseConfig, "__userCreation");
+      const appName = `userCreation_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      secondaryApp = initializeApp(firebaseConfig, appName);
       const secondaryAuth = getAuth(secondaryApp);
 
-      // Create user on secondary auth with 5s timeout
+      // Create user on secondary auth with 15s timeout
       const authPromise = createUserWithEmailAndPassword(secondaryAuth, email, password);
       const authTimeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Auth timeout")), 15000)
+        setTimeout(() => reject(new Error("Auth creation timeout")), 15000)
       );
       const result: any = await Promise.race([authPromise, authTimeout]);
 
@@ -306,7 +303,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password: (userData as any).password || password,
       };
 
-      // Save user doc with 3s timeout
+      // Save user doc to Firestore
       try {
         const setPromise = setDoc(doc(db, "users", result.user.uid), newUser);
         const fsTimeout = new Promise<never>((_, reject) =>
@@ -314,7 +311,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         );
         await Promise.race([setPromise, fsTimeout]);
       } catch (fsErr) {
-        console.warn("User doc Firestore sync timeout or warning:", fsErr);
+        console.warn("User doc Firestore sync warning:", fsErr);
       }
 
       // Cleanup secondary app asynchronously
@@ -326,18 +323,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return result.user.uid;
     } catch (err: any) {
       if (secondaryApp) {
-        try { deleteApp(secondaryApp); } catch (e) {}
+        try { deleteApp(secondaryApp).catch(() => {}); } catch (e) {}
       }
-      if (err.code === "auth/email-already-in-use") {
+      if (err?.code === "auth/email-already-in-use") {
         throw new Error("Ye email pehle se use ho rahi hai");
       }
-      if (err.code === "auth/weak-password") {
+      if (err?.code === "auth/weak-password") {
         throw new Error("Password kamzor hai. Kam az kam 6 characters chahiye");
       }
-      if (err.message === "Auth timeout") {
+      if (err?.message === "Auth creation timeout") {
         return "user-" + Date.now();
       }
-      throw new Error(err.message || "Account banane me masla aya");
+      throw new Error(err?.message || "Account banane me masla aya");
     }
   };
 
