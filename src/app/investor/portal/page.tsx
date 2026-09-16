@@ -1,8 +1,7 @@
-﻿"use client";
+"use client";
 export const dynamic = "force-dynamic";
 
-import {
-  Image as ImageIcon, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,7 +50,8 @@ import { Wallet,
   BadgePercent,
   Clock,
   Receipt,
-  Sparkles
+  Sparkles,
+  Image as ImageIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
@@ -154,6 +154,12 @@ export default function InvestorPortalPage() {
         const list = rSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Recovery)).sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
         setRecoveries(list);
       });
+
+        // Withdrawal requests real-time listener
+        const unsubWith = onSnapshot(query(collection(db, "withdrawals"), where("investorId", "==", inv.id)), (wSnap) => {
+          const wList = wSnap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => new Date(b.createdAt || b.requestedAt || 0).getTime() - new Date(a.createdAt || a.requestedAt || 0).getTime());
+          setWithdrawalsList(wList);
+        });
 
         const unsubNotif = onSnapshot(query(collection(db, "notifications"), where("userId", "==", appUser.uid), orderBy("createdAt", "desc")), (nSnap) => {
           setNotifications(nSnap.docs.map((d) => ({ id: d.id, ...d.data() } as NotifType)));

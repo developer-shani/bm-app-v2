@@ -31,7 +31,7 @@
     --border: 214 32% 91%;
     --input: 214 32% 91%;
     --ring: 221 83% 53%;
-    --radius: 0.75rem;
+    --radius: 0rem;
     --chart-1: 221 83% 53%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
@@ -90,6 +90,7 @@
 @layer base {
   * {
     @apply border-border;
+    border-radius: 0 !important;
   }
 
   body {
@@ -115,7 +116,7 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-muted-foreground/15 rounded-full;
+    @apply bg-muted-foreground/15;
   }
 
   ::-webkit-scrollbar-thumb:hover {
@@ -173,7 +174,7 @@
   }
 
   .glass-card {
-    @apply bg-card/70 backdrop-blur-2xl border border-border/50 rounded-2xl;
+    @apply bg-card/70 backdrop-blur-2xl border border-border/50;
     box-shadow:
       0 0 0 1px rgba(255,255,255,0.05),
       0 4px 24px -4px rgba(0,0,0,0.12),
@@ -311,7 +312,7 @@
 }
 
 [data-sonner-toast] {
-  border-radius: 1rem !important;
+  border-radius: 0 !important;
   box-shadow:
     0 10px 40px -10px rgba(0, 0, 0, 0.2),
     0 0 0 1px rgba(255,255,255,0.05) !important;

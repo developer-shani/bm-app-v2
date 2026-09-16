@@ -1,7 +1,7 @@
 "use client";
 export const dynamic = "force-dynamic";
 
-import { ChevronRight, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ import {
   CheckCircle2,
   Calendar,
   Sparkles,
+  ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
 import { db } from "@/lib/firebase";

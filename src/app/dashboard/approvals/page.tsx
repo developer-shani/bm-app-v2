@@ -28,7 +28,8 @@ import {
   Upload,
   FileCheck,
 } from "lucide-react";
-import { db } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { collection, onSnapshot, doc, updateDoc, getDoc, addDoc } from "firebase/firestore";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "sonner";
@@ -123,6 +124,18 @@ export default function ApprovalsPage() {
     if (!selectedWithdrawal) return;
     setIsSubmitting(true);
     try {
+      // Upload proof image to Firebase Storage if provided
+      let proofUrl = "";
+      if (proofImageFile) {
+        try {
+          const proofRef = ref(storage, `withdrawals/${selectedWithdrawal.investorId}/${Date.now()}_approval_proof`);
+          await uploadBytes(proofRef, proofImageFile);
+          proofUrl = await getDownloadURL(proofRef);
+        } catch (e) {
+          console.warn("Proof upload error:", e);
+        }
+      }
+
       // 1. Deduct investor balance & update totalWithdrawn
       if (selectedWithdrawal.investorId) {
         const invRef = doc(db, "investors", selectedWithdrawal.investorId);
@@ -141,7 +154,7 @@ export default function ApprovalsPage() {
       // 2. Update withdrawal request in Firestore
       await updateDoc(doc(db, "withdrawals", selectedWithdrawal.id), {
         status: "approved",
-        proofImage: proofImagePreview || "",
+        proofImage: proofUrl || "",
         transactionRef: transactionRef || "",
         adminNote: adminNote || "",
         approvedAt: new Date().toISOString(),
@@ -152,17 +165,18 @@ export default function ApprovalsPage() {
       try {
         await addDoc(collection(db, "notifications"), {
           userId: selectedWithdrawal.investorId,
-          type: "withdrawal_approved",
-          title: "Withdrawal Approved! 💰",
-          message: `Rs. ${selectedWithdrawal.amount.toLocaleString()} ki withdrawal request approve ho gayi hai. Proof view kar sakte hain.`,
+          type: "withdrawal",
+          title: "Nikasi Approve Ho Gayi! 💰",
+          message: `Rs. ${selectedWithdrawal.amount.toLocaleString()} ki nikasi request approve ho gayi hai. Proof dekh sakte hain.`,
+          read: false,
           createdAt: new Date().toISOString(),
         });
       } catch (nErr) {}
 
-      toast.success(`Rs. ${selectedWithdrawal.amount.toLocaleString()} withdrawal approved for ${selectedWithdrawal.investorName}!`);
+      toast.success(`Rs. ${selectedWithdrawal.amount.toLocaleString()} nikasi approved — ${selectedWithdrawal.investorName}!`);
       setSelectedWithdrawal(null);
     } catch (err: any) {
-      toast.error(err.message || "Approval error");
+      toast.error(err.message || "Approval mein masla aya");
     } finally {
       setIsSubmitting(false);
     }
@@ -243,7 +257,7 @@ export default function ApprovalsPage() {
             Approvals & Requests Management
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Investor Withdrawals aur User Profile updates approve ya reject karein ({totalPendingCount} pending)
+            Investor Nikasi aur User Profile updates approve ya reject karein ({totalPendingCount} pending)
           </p>
         </div>
       </div>
@@ -252,7 +266,7 @@ export default function ApprovalsPage() {
         <TabsList className="grid w-full grid-cols-2 max-w-md">
           <TabsTrigger value="withdrawals" className="gap-2">
             <ArrowUpFromLine className="w-4 h-4" />
-            Investor Withdrawals ({withdrawals.length})
+            Nikasi Requests ({withdrawals.length})
           </TabsTrigger>
           <TabsTrigger value="profile" className="gap-2">
             <UserCheck className="w-4 h-4" />
@@ -270,8 +284,8 @@ export default function ApprovalsPage() {
             <Card className="border-dashed">
               <CardContent className="flex flex-col items-center justify-center py-16 text-center">
                 <CheckCircle2 className="w-12 h-12 text-emerald-500/30 mb-4" />
-                <p className="text-sm font-medium text-muted-foreground">No Pending Withdrawal Requests</p>
-                <p className="text-xs text-muted-foreground/60 mt-1">Jab partners withdrawal request submit karenge to yahan show hogi</p>
+                <p className="text-sm font-medium text-muted-foreground">Koi Pending Nikasi Request Nahi</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">Jab partners nikasi request karenge to yahan show hogi</p>
               </CardContent>
             </Card>
           ) : (
@@ -283,7 +297,7 @@ export default function ApprovalsPage() {
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/20 text-xs">
-                            Pending Withdrawal
+                            Pending Nikasi
                           </Badge>
                           <h3 className="font-bold text-base">{w.investorName}</h3>
                         </div>
@@ -299,7 +313,7 @@ export default function ApprovalsPage() {
 
                       <div className="text-left md:text-right space-y-1">
                         <p className="text-2xl font-extrabold text-emerald-500">{formatCurrency(w.amount)}</p>
-                        <p className="text-[10px] text-muted-foreground uppercase font-semibold">Requested Amount</p>
+                        <p className="text-[10px] text-muted-foreground uppercase font-semibold">Nikasi Amount</p>
                       </div>
                     </div>
 
@@ -313,7 +327,7 @@ export default function ApprovalsPage() {
                           setRejectReason("");
                         }}
                       >
-                        <XCircle className="w-4 h-4" /> Reject Request
+                        <XCircle className="w-4 h-4" /> Reject Karein
                       </Button>
 
                       <Button
@@ -321,7 +335,7 @@ export default function ApprovalsPage() {
                         className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 font-semibold px-4 shadow-md shadow-emerald-600/20"
                         onClick={() => handleOpenApproveWithdrawal(w)}
                       >
-                        <FileCheck className="w-4 h-4" /> Approve & Attach Proof
+                        <FileCheck className="w-4 h-4" /> Approve & Proof Lagayein
                       </Button>
                     </div>
                   </CardContent>

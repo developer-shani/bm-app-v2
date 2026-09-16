@@ -33,10 +33,13 @@ import {
   ImagePlus,
   Loader2,
   Trash2,
+  ArrowUpFromLine,
+  Clock,
+  CheckCircle2,
 } from "lucide-react";
 import { db, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { collection, getDocs, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, addDoc } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, addDoc, getDoc } from "firebase/firestore";
 import { Investor } from "@/types";
 import { formatCurrency } from "@/lib/utils";
 import { amountToUrduWords } from "@/lib/amount-words";
@@ -57,6 +60,17 @@ export default function InvestorsPage() {
   const [balanceProofFile, setBalanceProofFile] = useState<File | null>(null);
   const [balanceProofPreview, setBalanceProofPreview] = useState("");
   const [balanceLoading, setBalanceLoading] = useState(false);
+
+  // Withdrawal Dialog State
+  const [withdrawInvestor, setWithdrawInvestor] = useState<Investor | null>(null);
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawNote, setWithdrawNote] = useState("");
+  const [withdrawProofFile, setWithdrawProofFile] = useState<File | null>(null);
+  const [withdrawProofPreview, setWithdrawProofPreview] = useState("");
+  const [withdrawLoading, setWithdrawLoading] = useState(false);
+
+  // Pending withdrawals data
+  const [pendingWithdrawals, setPendingWithdrawals] = useState<Record<string, any[]>>({});
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -89,7 +103,28 @@ export default function InvestorsPage() {
       }
     );
 
-    return () => unsubscribe();
+    // Load pending withdrawal requests
+    const unsubWithdrawals = onSnapshot(
+      collection(db, "withdrawals"),
+      (snap) => {
+        const grouped: Record<string, any[]> = {};
+        snap.docs.forEach((d) => {
+          const w = { id: d.id, ...d.data() };
+          if ((w as any).status === "pending") {
+            const invId = (w as any).investorId;
+            if (!grouped[invId]) grouped[invId] = [];
+            grouped[invId].push(w);
+          }
+        });
+        setPendingWithdrawals(grouped);
+      },
+      () => {}
+    );
+
+    return () => {
+      unsubscribe();
+      unsubWithdrawals();
+    };
   }, []);
 
   const handleBalanceProofChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,6 +134,89 @@ export default function InvestorsPage() {
       const reader = new FileReader();
       reader.onloadend = () => setBalanceProofPreview(reader.result as string);
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleWithdrawProofChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setWithdrawProofFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setWithdrawProofPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDirectWithdrawal = async () => {
+    if (!withdrawInvestor || !withdrawAmount || parseFloat(withdrawAmount) <= 0) {
+      toast.error("Meharbani karke valid amount enter karein");
+      return;
+    }
+    const amount = parseFloat(withdrawAmount);
+    if (amount > withdrawInvestor.availableBalance) {
+      toast.error("Balance se zyada nikasi nahi ho sakti");
+      return;
+    }
+    setWithdrawLoading(true);
+    try {
+      let proofUrl = "";
+      if (withdrawProofFile) {
+        try {
+          const proofRef = ref(storage, `withdrawals/${withdrawInvestor.id}/${Date.now()}_proof`);
+          await uploadBytes(proofRef, withdrawProofFile);
+          proofUrl = await getDownloadURL(proofRef);
+        } catch (e) {
+          console.warn("Withdrawal proof upload error:", e);
+        }
+      }
+
+      // 1. Update investor balance
+      const invRef = doc(db, "investors", withdrawInvestor.id);
+      const invSnap = await getDoc(invRef);
+      if (invSnap.exists()) {
+        const invData = invSnap.data();
+        await updateDoc(invRef, {
+          availableBalance: Math.max(0, (invData.availableBalance || 0) - amount),
+          totalWithdrawn: (invData.totalWithdrawn || 0) + amount,
+        });
+      }
+
+      // 2. Create withdrawal record (directly approved)
+      await addDoc(collection(db, "withdrawals"), {
+        investorId: withdrawInvestor.id,
+        investorName: withdrawInvestor.fullName,
+        amount,
+        status: "approved",
+        adminNote: withdrawNote || "Admin ne direct nikasi ki",
+        proofImage: proofUrl || "",
+        requestedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        approvedAt: new Date().toISOString(),
+        processedAt: new Date().toISOString(),
+      });
+
+      // 3. Notify investor
+      try {
+        await addDoc(collection(db, "notifications"), {
+          userId: withdrawInvestor.userId,
+          type: "withdrawal",
+          title: "Nikasi Successful! 💰",
+          message: `Rs. ${amount.toLocaleString()} ki nikasi admin ne process kar di hai.`,
+          read: false,
+          createdAt: new Date().toISOString(),
+        });
+      } catch (nErr) {}
+
+      toast.success(`Rs. ${amount.toLocaleString()} nikasi successful — ${withdrawInvestor.fullName}!`);
+      setWithdrawInvestor(null);
+      setWithdrawAmount("");
+      setWithdrawNote("");
+      setWithdrawProofFile(null);
+      setWithdrawProofPreview("");
+    } catch (err: any) {
+      toast.error(err.message || "Nikasi mein masla aya");
+    } finally {
+      setWithdrawLoading(false);
     }
   };
 
@@ -249,12 +367,30 @@ export default function InvestorsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredInvestors.map((investor) => {
             const isLowBalance = investor.availableBalance < 10000;
+            const investorPendingW = pendingWithdrawals[investor.id] || [];
   return (
               <Card
                 key={investor.id}
                 className="hover:shadow-lg transition-all duration-300 hover:border-primary/20 group"
               >
                 <CardContent className="p-6 space-y-4">
+                  {/* Pending Withdrawal Alert */}
+                  {investorPendingW.length > 0 && (
+                    <Link href="/dashboard/approvals" className="block">
+                      <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 transition-colors cursor-pointer">
+                        <Clock className="w-4 h-4 text-amber-500 shrink-0 animate-pulse" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                            ⏳ Nikasi Request Pending
+                          </p>
+                          <p className="text-[10px] text-amber-600/80 dark:text-amber-400/80 truncate">
+                            {investorPendingW.map((w: any) => `Rs. ${w.amount?.toLocaleString()}`).join(" + ")} — Approve karein →
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  )}
+
                   {/* Investor Name & Status */}
                   <div className="flex items-start justify-between">
                     <div>
@@ -340,14 +476,28 @@ export default function InvestorsPage() {
                         setBalanceProofPreview("");
                       }}
                     >
-                      <Plus className="w-3.5 h-3.5" /> Add Balance
+                      <Plus className="w-3.5 h-3.5" /> Balance Add
+                    </Button>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="flex-1 bg-orange-500 hover:bg-orange-600 text-white gap-1.5 text-xs font-semibold h-8"
+                      onClick={() => {
+                        setWithdrawInvestor(investor);
+                        setWithdrawAmount("");
+                        setWithdrawNote("");
+                        setWithdrawProofFile(null);
+                        setWithdrawProofPreview("");
+                      }}
+                    >
+                      <ArrowUpFromLine className="w-3.5 h-3.5" /> Nikasi
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-500/10"
                       onClick={() => handleSoftDelete(investor)}
-                      title="Move to Trash"
+                      title="Trash mein bhejein"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -493,6 +643,137 @@ export default function InvestorsPage() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Admin Direct Withdrawal Dialog */}
+      <Dialog open={!!withdrawInvestor} onOpenChange={() => setWithdrawInvestor(null)}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-orange-500">
+              <ArrowUpFromLine className="w-5 h-5" /> Nikasi / Withdrawal
+            </DialogTitle>
+            <DialogDescription>
+              {withdrawInvestor?.fullName} ke account se paisa nikaalein
+            </DialogDescription>
+          </DialogHeader>
+
+          {withdrawInvestor && (
+            <div className="space-y-4 py-2">
+              {/* Current Balance Info */}
+              <div className="bg-muted/50 rounded-xl p-3 text-xs space-y-1 border">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Available Balance:</span>
+                  <span className="font-bold text-emerald-500">{formatCurrency(withdrawInvestor.availableBalance)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total Withdrawn:</span>
+                  <span className="font-medium">{formatCurrency(withdrawInvestor.totalWithdrawn || 0)}</span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold">Nikasi Amount (PKR) *</label>
+                <Input
+                  type="number"
+                  placeholder="e.g. 50000"
+                  value={withdrawAmount}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                />
+                {withdrawAmount && parseFloat(withdrawAmount) > 0 && (
+                  <div className={`text-xs p-2 rounded-lg ${parseFloat(withdrawAmount) > withdrawInvestor.availableBalance ? 'bg-red-500/10 text-red-500' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'}`}>
+                    {parseFloat(withdrawAmount) > withdrawInvestor.availableBalance 
+                      ? `⚠️ Balance se zyada! Available: ${formatCurrency(withdrawInvestor.availableBalance)}` 
+                      : `✅ Nikasi ke baad balance: ${formatCurrency(withdrawInvestor.availableBalance - parseFloat(withdrawAmount))}`}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold">Note / Wajah (Optional)</label>
+                <Input
+                  placeholder="e.g. Cash di / Bank transfer kiya"
+                  value={withdrawNote}
+                  onChange={(e) => setWithdrawNote(e.target.value)}
+                />
+              </div>
+
+              {/* Payment Proof Upload */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold">Payment Proof Image (Optional)</label>
+                <div className="border-2 border-dashed border-border/60 rounded-xl p-4 text-center hover:border-orange-500/30 transition-colors">
+                  {withdrawProofPreview ? (
+                    <div className="space-y-2">
+                      <img
+                        src={withdrawProofPreview}
+                        alt="Payment Proof"
+                        className="max-h-32 mx-auto rounded-lg object-cover border"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { setWithdrawProofFile(null); setWithdrawProofPreview(""); }}
+                        className="h-7 text-xs"
+                      >
+                        Proof Hatayein
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center mx-auto">
+                        <ImagePlus className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                      <p className="text-xs text-muted-foreground">Slip / Receipt / Bank Screenshot upload karein</p>
+                      <div className="flex gap-2 justify-center pt-1">
+                        <label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleWithdrawProofChange}
+                            className="hidden"
+                          />
+                          <Button type="button" variant="outline" size="sm" className="gap-1.5 h-7 text-xs" asChild>
+                            <span>
+                              <Upload className="w-3 h-3" />
+                              Upload Proof
+                            </span>
+                          </Button>
+                        </label>
+                        <label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            onChange={handleWithdrawProofChange}
+                            className="hidden"
+                          />
+                          <Button type="button" variant="outline" size="sm" className="gap-1.5 h-7 text-xs" asChild>
+                            <span>
+                              <Camera className="w-3 h-3" />
+                              Camera
+                            </span>
+                          </Button>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setWithdrawInvestor(null)}>Cancel</Button>
+            <Button
+              onClick={handleDirectWithdrawal}
+              disabled={withdrawLoading || !withdrawAmount || parseFloat(withdrawAmount) <= 0 || (withdrawInvestor ? parseFloat(withdrawAmount) > withdrawInvestor.availableBalance : true)}
+              className="bg-orange-500 hover:bg-orange-600 text-white gap-2"
+            >
+              {withdrawLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+              Nikasi Confirm Karein
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
