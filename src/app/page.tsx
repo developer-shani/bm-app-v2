@@ -37,6 +37,8 @@ export default function LoginPage() {
     setIsLoading(false);
   };
 
+  const [autoLoginDone, setAutoLoginDone] = useState(false);
+
   useEffect(() => {
     if (appUser) {
       if (appUser.role === "investor") {
@@ -51,26 +53,31 @@ export default function LoginPage() {
 
   // Read auto-login params from URL query string
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const urlEmail = params.get("email") || params.get("u");
-      const urlPassword = params.get("password") || params.get("p");
+    if (typeof window !== "undefined" && !autoLoginDone && !appUser) {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const urlEmail = params.get("email") || params.get("u");
+        const urlPassword = params.get("password") || params.get("p");
 
-      if (urlEmail && urlPassword && !appUser) {
-        setEmail(urlEmail);
-        setPassword(urlPassword);
-        setIsLoading(true);
-        setError("");
-        signIn(urlEmail, urlPassword)
-          .catch((err: any) => {
-            setError(err.message || "Auto-login me masla aya. Credentials verify karein.");
-          })
-          .finally(() => {
-            setIsLoading(false);
-          });
+        if (urlEmail && urlPassword) {
+          setAutoLoginDone(true);
+          setEmail(urlEmail);
+          setPassword(urlPassword);
+          setIsLoading(true);
+          setError("");
+          signIn(urlEmail, urlPassword)
+            .catch((err: any) => {
+              setError(err?.message || "Auto-login me masla aya. Credentials verify karein.");
+            })
+            .finally(() => {
+              setIsLoading(false);
+            });
+        }
+      } catch (e) {
+        console.warn("Auto-login URL parse error:", e);
       }
     }
-  }, []);
+  }, [appUser, autoLoginDone, signIn]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
