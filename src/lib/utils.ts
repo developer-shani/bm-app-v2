@@ -80,3 +80,11 @@ export function getPortalUrl(): string {
   }
   return "https://installmentsalesmanager.web.app";
 }
+
+export function getPortalUrlWithCreds(email?: string, password?: string): string {
+  const baseUrl = getPortalUrl();
+  if (!email || !password || password === "N/A" || password.includes("As set during")) {
+    return baseUrl;
+  }
+  return `${baseUrl}/?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+}

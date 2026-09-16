@@ -34,7 +34,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { amountToUrduWords } from "@/lib/amount-words";
-import { getPortalUrl } from "@/lib/utils";
+import { getPortalUrl, getPortalUrlWithCreds } from "@/lib/utils";
 
 export default function AddInvestorPage() {
   const router = useRouter();
@@ -66,9 +66,9 @@ export default function AddInvestorPage() {
   const [showProfilePic, setShowProfilePic] = useState(false);
 
   const handleCopyCredentials = () => {
-    const origin = getPortalUrl();
+    const origin = getPortalUrlWithCreds(email, password);
     const phoneStr = phone ? `\n📱 *Phone:* ${phone}` : "";
-    const text = `🔑 *Brother Mobiles Portal Access Credentials*\n\n👤 *Name:* ${fullName}\n🛡️ *Role:* Investor / Partner${phoneStr}\n📧 *Email/Username:* ${email}\n🔒 *Password:* ${password || "N/A"}\n🌐 *Portal Link:* ${origin}\n\n_Brother Mobiles Shop Management System_`;
+    const text = `🔐 *Brother Mobiles Portal Access Credentials*\n\n👤 *Name:* ${fullName}\n🛡️ *Role:* Investor / Partner${phoneStr}\n📧 *Email/Username:* ${email}\n🔒 *Password:* ${password || "N/A"}\n🌐 *Direct Login Link:* ${origin}\n\n_Brother Mobiles Shop Management System_`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     toast.success("Credentials clipboard me copy ho gaye!");

@@ -49,6 +49,29 @@ export default function LoginPage() {
     }
   }, [appUser, router]);
 
+  // Read auto-login params from URL query string
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const urlEmail = params.get("email") || params.get("u");
+      const urlPassword = params.get("password") || params.get("p");
+
+      if (urlEmail && urlPassword && !appUser) {
+        setEmail(urlEmail);
+        setPassword(urlPassword);
+        setIsLoading(true);
+        setError("");
+        signIn(urlEmail, urlPassword)
+          .catch((err: any) => {
+            setError(err.message || "Auto-login me masla aya. Credentials verify karein.");
+          })
+          .finally(() => {
+            setIsLoading(false);
+          });
+      }
+    }
+  }, []);
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
       {/* Background Effects */}

@@ -21,7 +21,7 @@ import { db } from "@/lib/firebase";
 import { collection, addDoc } from "firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { getPortalUrl } from "@/lib/utils";
+import { getPortalUrl, getPortalUrlWithCreds } from "@/lib/utils";
 
 export default function AddResellerPage() {
   const router = useRouter();
@@ -44,20 +44,20 @@ export default function AddResellerPage() {
 
   const handleCopyCredentials = (u: typeof shareCredsUser) => {
     if (!u) return;
-    const origin = getPortalUrl();
     const pwd = (u.password && u.password !== "N/A") ? u.password : "As set during account creation";
+    const origin = getPortalUrlWithCreds(u.email, pwd);
     const phoneStr = u.phone ? `\n📱 *Phone:* ${u.phone}` : "";
-    const text = `🔐 *Brother Mobiles Portal Access Credentials*\n\n👤 *Name:* ${u.name}${phoneStr}\n💼 *Role:* Reseller / Member\n📧 *Email/Username:* ${u.email}\n🔑 *Password:* ${pwd}\n🌐 *Portal Link:* ${origin}\n\n_Brother Mobiles Shop Management System_`;
+    const text = `🔐 *Brother Mobiles Portal Access Credentials*\n\n👤 *Name:* ${u.name}${phoneStr}\n💼 *Role:* Reseller / Member\n📧 *Email/Username:* ${u.email}\n🔑 *Password:* ${pwd}\n🌐 *Direct Login Link:* ${origin}\n\n_Brother Mobiles Shop Management System_`;
     navigator.clipboard.writeText(text);
     toast.success("Credentials clipboard par copy ho gaye!");
   };
 
   const handleShareWhatsApp = (u: typeof shareCredsUser) => {
     if (!u) return;
-    const origin = getPortalUrl();
     const pwd = (u.password && u.password !== "N/A") ? u.password : "As set during account creation";
+    const origin = getPortalUrlWithCreds(u.email, pwd);
     const phoneStr = u.phone ? `\n📱 *Phone:* ${u.phone}` : "";
-    const text = `🔐 *Brother Mobiles Portal Access Credentials*\n\n👤 *Name:* ${u.name}${phoneStr}\n💼 *Role:* Reseller / Member\n📧 *Email/Username:* ${u.email}\n🔑 *Password:* ${pwd}\n🌐 *Portal Link:* ${origin}\n\n_Brother Mobiles Shop Management System_`;
+    const text = `🔐 *Brother Mobiles Portal Access Credentials*\n\n👤 *Name:* ${u.name}${phoneStr}\n💼 *Role:* Reseller / Member\n📧 *Email/Username:* ${u.email}\n🔑 *Password:* ${pwd}\n🌐 *Direct Login Link:* ${origin}\n\n_Brother Mobiles Shop Management System_`;
     const cleanPhone = (u.phone || "").replace(/[^0-9]/g, "");
     const formattedPhone = cleanPhone.startsWith("0") ? "92" + cleanPhone.slice(1) : cleanPhone;
     window.open("https://wa.me/" + formattedPhone + "?text=" + encodeURIComponent(text), "_blank");

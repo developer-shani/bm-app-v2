@@ -56,7 +56,7 @@ import { collection, addDoc, getDocs, query, orderBy, updateDoc, doc } from "fir
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useAuth } from "@/hooks/use-auth";
 import { Investor, Reseller, MobileCompany } from "@/types";
-import { formatCurrency, generateCustomerId, getPortalUrl } from "@/lib/utils";
+import { formatCurrency, generateCustomerId, getPortalUrl, getPortalUrlWithCreds } from "@/lib/utils";
 import {
   calculateSellingPrice,
   calculateProfit,
@@ -244,7 +244,8 @@ export default function NewSalePage() {
     const roleTitle = user.role === "investor" ? "Investor / Partner" : user.role === "reseller" ? "Reseller / Member" : "Admin";
     const pwd = (user.password && user.password !== "N/A") ? user.password : "As set during account creation";
     const phoneStr = user.phone ? `\n📱 *Phone:* ${user.phone}` : "";
-    const text = `🔐 *Brother Mobiles Portal Access Credentials*\n\n👤 *Name:* ${user.name}${phoneStr}\n💼 *Role:* ${roleTitle}\n📧 *Email/Username:* ${user.email}\n🔑 *Password:* ${pwd}\n🌐 *Portal Link:* ${getPortalUrl()}\n\n_Brother Mobiles Shop Management System_`;
+    const portalUrl = getPortalUrlWithCreds(user.email, pwd);
+    const text = `🔐 *Brother Mobiles Portal Access Credentials*\n\n👤 *Name:* ${user.name}${phoneStr}\n💼 *Role:* ${roleTitle}\n📧 *Email/Username:* ${user.email}\n🔑 *Password:* ${pwd}\n🌐 *Direct Login Link:* ${portalUrl}\n\n_Brother Mobiles Shop Management System_`;
     navigator.clipboard.writeText(text);
     toast.success("Credentials clipboard par copy ho gaye!");
   };
@@ -253,7 +254,8 @@ export default function NewSalePage() {
     const roleTitle = user.role === "investor" ? "Investor / Partner" : user.role === "reseller" ? "Reseller / Member" : "Admin";
     const pwd = (user.password && user.password !== "N/A") ? user.password : "As set during account creation";
     const phoneStr = user.phone ? `\n📱 *Phone:* ${user.phone}` : "";
-    const text = `🔐 *Brother Mobiles Portal Access Credentials*\n\n👤 *Name:* ${user.name}${phoneStr}\n💼 *Role:* ${roleTitle}\n📧 *Email/Username:* ${user.email}\n🔑 *Password:* ${pwd}\n🌐 *Portal Link:* ${getPortalUrl()}\n\n_Brother Mobiles Shop Management System_`;
+    const portalUrl = getPortalUrlWithCreds(user.email, pwd);
+    const text = `🔐 *Brother Mobiles Portal Access Credentials*\n\n👤 *Name:* ${user.name}${phoneStr}\n💼 *Role:* ${roleTitle}\n📧 *Email/Username:* ${user.email}\n🔑 *Password:* ${pwd}\n🌐 *Direct Login Link:* ${portalUrl}\n\n_Brother Mobiles Shop Management System_`;
     const cleanPhone = (user.phone || "").replace(/[^0-9]/g, "");
     const formattedPhone = cleanPhone.startsWith("0") ? "92" + cleanPhone.slice(1) : cleanPhone;
     window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(text)}`, "_blank");
@@ -1068,8 +1070,8 @@ export default function NewSalePage() {
                 <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{shareCredsUser.password || "N/A"}</span>
               </div>
               <div className="flex justify-between items-center text-xs">
-                <span className="text-muted-foreground font-semibold">Portal URL:</span>
-                <span className="font-mono text-[11px] text-primary font-medium">{getPortalUrl()}</span>
+                <span className="text-muted-foreground font-semibold">Direct Login URL:</span>
+                <span className="font-mono text-[11px] text-primary font-medium truncate max-w-[220px]">{getPortalUrlWithCreds(shareCredsUser.email, shareCredsUser.password)}</span>
               </div>
             </div>
           )}
