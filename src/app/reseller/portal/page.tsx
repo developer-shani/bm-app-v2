@@ -98,11 +98,11 @@ export default function ResellerPortalPage() {
           ...(editName && editName !== (reseller?.fullName || appUser.fullName) ? { fullName: { old: reseller?.fullName || "", new: editName } } : {}),
           ...(editPhone && editPhone !== reseller?.phone ? { phone: { old: reseller?.phone || "", new: editPhone } } : {}),
         },
-        newProfileImage: editPhotoUrl || undefined,
+        newProfileImage: editPhotoUrl || "",
         status: "pending",
         submittedAt: new Date().toISOString(),
         collectionName: "resellers",
-        docId: reseller?.id,
+        docId: reseller?.id || "",
       });
       toast.success("Profile update request submitted for admin approval!");
       setShowProfileEdit(false);

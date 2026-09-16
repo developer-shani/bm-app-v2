@@ -275,11 +275,11 @@ export default function InvestorPortalPage() {
           ...(editName && editName !== (investor?.fullName || appUser.fullName) ? { fullName: { old: investor?.fullName || "", new: editName } } : {}),
           ...(editPhone && editPhone !== investor?.phone ? { phone: { old: investor?.phone || "", new: editPhone } } : {}),
         },
-        newProfileImage: editPhotoUrl || undefined,
+        newProfileImage: editPhotoUrl || "",
         status: "pending",
         submittedAt: new Date().toISOString(),
         collectionName: "investors",
-        docId: investor?.id,
+        docId: investor?.id || "",
       });
       toast.success("Profile update request submitted for admin approval!");
       setShowProfileEdit(false);
