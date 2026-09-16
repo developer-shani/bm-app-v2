@@ -74,6 +74,13 @@ export interface WithdrawalRequest {
 // ============================================
 // CUSTOMER / SALE
 // ============================================
+export interface CustomerEditHistoryItem {
+  id: string;
+  editedAt: string;
+  editedBy?: string;
+  changes: Record<string, { old: any; new: any }>;
+}
+
 export interface Customer {
   id: string;
   idNumber: string; // auto-generated unique like #3812
@@ -104,6 +111,7 @@ export interface Customer {
   paidInstallments: number;
   nextDueDate: string;
   expenses: Expense[];
+  editHistory?: CustomerEditHistoryItem[];
   status: "active" | "completed" | "defaulted";
   lossReason?: string;
   lossDate?: string;

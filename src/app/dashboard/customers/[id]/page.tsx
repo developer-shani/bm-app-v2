@@ -42,11 +42,13 @@ import {
   Ban,
   IndianRupee,
   Trash2,
+  Edit,
+  History
 } from "lucide-react";
 import { db, storage } from "@/lib/firebase";
 import { doc, getDoc, collection, getDocs, query, where, orderBy, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { Customer, Recovery, Investor } from "@/types";
+import { Customer, Recovery, Investor, CustomerEditHistoryItem } from "@/types";
 import { formatCurrency, formatDate, formatDateTime, getDaysOverdue, getInstallmentStatus } from "@/lib/utils";
 import { generateSmsMessage, splitByRatio } from "@/lib/calculations";
 import { toast } from "sonner";
@@ -67,6 +69,145 @@ export default function CustomerDetailPage() {
   const [proofImage, setProofImage] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState("");
   const [recoveryLoading, setRecoveryLoading] = useState(false);
+
+  
+  // Edit Customer Dialog State
+  const [showEditCustomer, setShowEditCustomer] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editPhone1, setEditPhone1] = useState("");
+  const [editPhone2, setEditPhone2] = useState("");
+  const [editCompany, setEditCompany] = useState("");
+  const [editModel, setEditModel] = useState("");
+  const [editImei1, setEditImei1] = useState("");
+  const [editImei2, setEditImei2] = useState("");
+  const [editPurchase, setEditPurchase] = useState("");
+  const [editSelling, setEditSelling] = useState("");
+  const [editMonthly, setEditMonthly] = useState("");
+  const [editRemaining, setEditRemaining] = useState("");
+  const [editAdvance, setEditAdvance] = useState("");
+  const [editImage, setEditImage] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+
+  // Soft Delete State
+  const [showDeleteCustomer, setShowDeleteCustomer] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const openEditModal = () => {
+    if (!customer) return;
+    setEditName(customer.name || "");
+    setEditPhone1(customer.phone1 || "");
+    setEditPhone2(customer.phone2 || "");
+    setEditCompany(customer.mobileCompany || "");
+    setEditModel(customer.mobileModel || "");
+    setEditImei1(customer.imei1 || "");
+    setEditImei2(customer.imei2 || "");
+    setEditPurchase(String(customer.purchasePrice || ""));
+    setEditSelling(String(customer.sellingPrice || ""));
+    setEditMonthly(String(customer.monthlyInstallment || ""));
+    setEditRemaining(String(customer.remainingAmount || ""));
+    setEditAdvance(String(customer.advancePayment || ""));
+    setEditImage(customer.image || "");
+    setShowEditCustomer(true);
+  };
+
+  const handleSaveCustomerEdit = async () => {
+    if (!customer) return;
+    setEditSaving(true);
+    try {
+      const changes: Record<string, { old: any; new: any }> = {};
+
+      if (editName.trim() !== (customer.name || "").trim()) changes["Name"] = { old: customer.name || "N/A", new: editName.trim() };
+      if (editPhone1.trim() !== (customer.phone1 || "").trim()) changes["Phone 1"] = { old: customer.phone1 || "N/A", new: editPhone1.trim() };
+      if (editPhone2.trim() !== (customer.phone2 || "").trim()) changes["Phone 2"] = { old: customer.phone2 || "None", new: editPhone2.trim() || "None" };
+      if (editCompany.trim() !== (customer.mobileCompany || "").trim()) changes["Mobile Company"] = { old: customer.mobileCompany || "N/A", new: editCompany.trim() };
+      if (editModel.trim() !== (customer.mobileModel || "").trim()) changes["Mobile Model"] = { old: customer.mobileModel || "N/A", new: editModel.trim() };
+      if (editImei1.trim() !== (customer.imei1 || "").trim()) changes["IMEI 1"] = { old: customer.imei1 || "None", new: editImei1.trim() || "None" };
+      if (editImei2.trim() !== (customer.imei2 || "").trim()) changes["IMEI 2"] = { old: customer.imei2 || "None", new: editImei2.trim() || "None" };
+      
+      const newPurch = parseFloat(editPurchase) || customer.purchasePrice;
+      if (newPurch !== customer.purchasePrice) changes["Purchase Price"] = { old: formatCurrency(customer.purchasePrice), new: formatCurrency(newPurch) };
+      
+      const newSell = parseFloat(editSelling) || customer.sellingPrice;
+      if (newSell !== customer.sellingPrice) changes["Selling Price"] = { old: formatCurrency(customer.sellingPrice), new: formatCurrency(newSell) };
+      
+      const newMonth = parseFloat(editMonthly) || customer.monthlyInstallment;
+      if (newMonth !== customer.monthlyInstallment) changes["Monthly Installment"] = { old: formatCurrency(customer.monthlyInstallment), new: formatCurrency(newMonth) };
+      
+      const newRem = parseFloat(editRemaining) ?? customer.remainingAmount;
+      if (newRem !== customer.remainingAmount) changes["Remaining Amount"] = { old: formatCurrency(customer.remainingAmount), new: formatCurrency(newRem) };
+
+      const newAdv = parseFloat(editAdvance) ?? customer.advancePayment;
+      if (newAdv !== customer.advancePayment) changes["Advance Payment"] = { old: formatCurrency(customer.advancePayment), new: formatCurrency(newAdv) };
+
+      if (editImage.trim() !== (customer.image || "").trim()) changes["Photo URL"] = { old: customer.image ? "Previous Image" : "None", new: editImage.trim() ? "New Image URL" : "None" };
+
+      if (Object.keys(changes).length === 0) {
+        toast.info("Koi change nahi hua!");
+        setShowEditCustomer(false);
+        return;
+      }
+
+      const historyItem: CustomerEditHistoryItem = {
+        id: `hist_${Date.now()}`,
+        editedAt: new Date().toISOString(),
+        editedBy: "Shop Admin",
+        changes,
+      };
+
+      const existingHistory = customer.editHistory || [];
+      const updatedHistory = [historyItem, ...existingHistory];
+
+      const updateData: any = {
+        name: editName.trim(),
+        phone1: editPhone1.trim(),
+        phone2: editPhone2.trim(),
+        mobileCompany: editCompany.trim(),
+        mobileModel: editModel.trim(),
+        imei1: editImei1.trim(),
+        imei2: editImei2.trim(),
+        purchasePrice: newPurch,
+        sellingPrice: newSell,
+        monthlyInstallment: newMonth,
+        remainingAmount: newRem,
+        advancePayment: newAdv,
+        image: editImage.trim(),
+        editHistory: updatedHistory,
+      };
+
+      await updateDoc(doc(db, "customers", customer.id), updateData);
+
+      toast.success("Customer details update ho gayi hain! Purana version history me save ho gaya.");
+      setShowEditCustomer(false);
+      loadData();
+    } catch (e: any) {
+      toast.error(e.message || "Edit fail hua");
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const handleSoftDeleteCustomer = async () => {
+    if (!customer) return;
+    setDeleteLoading(true);
+    try {
+      await addDoc(collection(db, "deleted_records"), {
+        originalId: customer.id,
+        type: "customers",
+        data: customer,
+        deletedAt: new Date().toISOString(),
+        deletedBy: "admin",
+      });
+
+      await deleteDoc(doc(db, "customers", customer.id));
+
+      toast.success("Customer trash me move ho gaya hai! (Trash se restore kar sakte hain)");
+      router.push("/dashboard/customers");
+    } catch (e: any) {
+      toast.error(e.message || "Delete fail hua");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   // Loss Dialog
   const [showLoss, setShowLoss] = useState(false);
@@ -269,6 +410,14 @@ export default function CustomerDetailPage() {
             </DialogContent>
           </Dialog>
 
+          <Button variant="outline" className="gap-2 border-amber-500/30 text-amber-600 hover:bg-amber-500/10" onClick={openEditModal}>
+            <Edit className="w-4 h-4" /> Edit Details
+          </Button>
+
+          <Button variant="outline" className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setShowDeleteCustomer(true)}>
+            <Trash2 className="w-4 h-4" /> Move to Trash
+          </Button>
+
           <Button variant="outline" className="gap-2" onClick={handleSendMessage}>
             <MessageSquare className="w-4 h-4" /> WhatsApp Reminder
           </Button>
@@ -445,6 +594,172 @@ export default function CustomerDetailPage() {
           )}
         </CardContent>
       </Card>
+    
+      {/* Edit Customer Dialog */}
+      <Dialog open={showEditCustomer} onOpenChange={setShowEditCustomer}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-600">
+              <Edit className="w-5 h-5" /> Edit Customer Details
+            </DialogTitle>
+            <DialogDescription>
+              Detail update karne par purani details &quot;Edit History&quot; me automatically save ho jayengi.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm py-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Customer Full Name *</Label>
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Full Name" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Phone Number 1 *</Label>
+              <Input value={editPhone1} onChange={(e) => setEditPhone1(e.target.value)} placeholder="0300-1234567" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Phone Number 2 (Optional)</Label>
+              <Input value={editPhone2} onChange={(e) => setEditPhone2(e.target.value)} placeholder="0300-7654321" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Mobile Company *</Label>
+              <Input value={editCompany} onChange={(e) => setEditCompany(e.target.value)} placeholder="Infinix, OPPO, Samsung..." />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Mobile Model *</Label>
+              <Input value={editModel} onChange={(e) => setEditModel(e.target.value)} placeholder="Hot 30i, Y400..." />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">IMEI Number 1</Label>
+              <Input value={editImei1} onChange={(e) => setEditImei1(e.target.value)} placeholder="352011..." />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">IMEI Number 2</Label>
+              <Input value={editImei2} onChange={(e) => setEditImei2(e.target.value)} placeholder="352012..." />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Purchase Price (PKR)</Label>
+              <Input type="number" value={editPurchase} onChange={(e) => setEditPurchase(e.target.value)} />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Selling Price (PKR)</Label>
+              <Input type="number" value={editSelling} onChange={(e) => setEditSelling(e.target.value)} />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Monthly Installment (PKR)</Label>
+              <Input type="number" value={editMonthly} onChange={(e) => setEditMonthly(e.target.value)} />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Remaining Amount (PKR)</Label>
+              <Input type="number" value={editRemaining} onChange={(e) => setEditRemaining(e.target.value)} />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Advance Payment (PKR)</Label>
+              <Input type="number" value={editAdvance} onChange={(e) => setEditAdvance(e.target.value)} />
+            </div>
+
+            <div className="space-y-1.5 md:col-span-2">
+              <Label className="text-xs font-semibold">Customer Photo URL</Label>
+              <Input value={editImage} onChange={(e) => setEditImage(e.target.value)} placeholder="https://..." />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowEditCustomer(false)}>Cancel</Button>
+            <Button onClick={handleSaveCustomerEdit} disabled={editSaving} className="bg-amber-600 hover:bg-amber-700 text-white gap-2">
+              {editSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Edit className="w-4 h-4" />} Save & Record Version
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteCustomer} onOpenChange={setShowDeleteCustomer}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive flex items-center gap-2">
+              <Trash2 className="w-5 h-5" /> Delete Customer to Trash
+            </DialogTitle>
+            <DialogDescription>
+              Kya aap <strong>{customer.name}</strong> ko Trash me move karna chahte hain? Aap Trash section se is record ko kabhi bhi 1-click se restore kar sakte hain.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="gap-2 mt-4">
+            <Button variant="outline" onClick={() => setShowDeleteCustomer(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleSoftDeleteCustomer} disabled={deleteLoading} className="gap-2">
+              {deleteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Confirm Soft Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit & Change History (Version Logs) */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <History className="w-4 h-4 text-amber-500" /> Edit & Change History (Version Log)
+          </CardTitle>
+          <CardDescription>
+            Agar koi detail galat ho jaye aur update ki jaye, to purani detail yahan version history me preserve rehti hai.
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          {!customer.editHistory || customer.editHistory.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground border border-dashed rounded-xl p-4">
+              <History className="w-8 h-8 text-muted-foreground/60 mx-auto mb-2" />
+              <p className="text-sm font-medium">Koi edit history nahi hai</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Customer ke original initial details hi active hain</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {customer.editHistory.map((item, idx) => (
+                <div key={item.id || idx} className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 space-y-3">
+                  <div className="flex items-center justify-between border-b border-amber-500/20 pb-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/30">
+                        Version #{customer.editHistory!.length - idx}
+                      </Badge>
+                      <span className="text-xs font-semibold">{item.editedBy || "Shop Admin"}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground font-mono">
+                      {formatDateTime(item.editedAt)}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {Object.entries(item.changes || {}).map(([field, diff]: [string, any]) => (
+                      <div key={field} className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs p-2 rounded-lg bg-background/80 border border-border/40">
+                        <span className="font-semibold text-muted-foreground self-center">{field}:</span>
+                        <div className="text-amber-600 dark:text-amber-400 bg-amber-500/10 p-1.5 rounded border border-amber-500/20">
+                          <span className="text-[10px] uppercase font-bold block text-muted-foreground">Purana (Old):</span>
+                          <span>{String(diff.old ?? "N/A")}</span>
+                        </div>
+                        <div className="text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 p-1.5 rounded border border-emerald-500/20">
+                          <span className="text-[10px] uppercase font-bold block text-muted-foreground">Naya (New):</span>
+                          <span>{String(diff.new ?? "N/A")}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
     </div>
   );
 }
