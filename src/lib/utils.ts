@@ -74,11 +74,11 @@ export function getInstallmentStatus(dueDate: Date | string | undefined | null):
 }
 
 export function getPortalUrl(): string {
-  if (typeof window === "undefined") return "https://installmentsalesmanager.web.app";
+  if (typeof window === "undefined") return "https://brother-mobiles.vercel.app";
   if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
     return window.location.origin;
   }
-  return "https://installmentsalesmanager.web.app";
+  return "https://brother-mobiles.vercel.app";
 }
 
 export function getPortalUrlWithCreds(email?: string, password?: string): string {
