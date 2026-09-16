@@ -23,6 +23,20 @@ export interface AppUser {
 // ============================================
 // INVESTOR
 // ============================================
+export interface InvestorEditHistoryItem {
+  id: string;
+  editedAt: string;
+  editedBy?: string;
+  changes: Record<string, { old: any; new: any }>;
+}
+
+export interface ResellerEditHistoryItem {
+  id: string;
+  editedAt: string;
+  editedBy?: string;
+  changes: Record<string, { old: any; new: any }>;
+}
+
 export interface Investor {
   password?: string;
   id: string;
@@ -41,6 +55,7 @@ export interface Investor {
   sharingRatio: number;
   status: "active" | "inactive";
   createdAt: string;
+  editHistory?: InvestorEditHistoryItem[];
 }
 
 export interface Investment {
@@ -159,6 +174,8 @@ export interface Reseller {
   totalReferrals: number;
   status: "active" | "inactive";
   createdAt: string;
+  editHistory?: ResellerEditHistoryItem[];
+  editHistory?: InvestorEditHistoryItem[];
 }
 
 // ============================================
