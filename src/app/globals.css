@@ -128,6 +128,17 @@
       radial-gradient(at 10% 10%, rgba(6, 78, 59, 0.04) 0px, transparent 50%),
       radial-gradient(at 90% 90%, rgba(16, 185, 129, 0.03) 0px, transparent 50%);
     background-attachment: fixed;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+  }
+
+  input, textarea, [contenteditable="true"] {
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
   }
 
   h1, h2, h3, h4, h5, h6, .font-heading {
