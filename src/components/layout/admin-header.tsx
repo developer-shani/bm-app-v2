@@ -127,6 +127,10 @@ export function AdminHeader({ onMenuToggle }: AdminHeaderProps) {
               <Settings className="mr-2.5 h-4 w-4 text-muted-foreground" />
               Settings & Preferences
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push("/dashboard/settings")} className="rounded-xl cursor-pointer text-xs font-medium py-2 text-red-600 dark:text-red-400">
+              <Shield className="mr-2.5 h-4 w-4 text-red-500" />
+              Reset Test Data (PIN: 8208)
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push("/dashboard")} className="rounded-xl cursor-pointer text-xs font-medium py-2">
               <User className="mr-2.5 h-4 w-4 text-muted-foreground" />
               My Profile
