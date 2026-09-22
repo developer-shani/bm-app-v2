@@ -20,7 +20,7 @@ import {
   Smartphone,
   CreditCard,
   Plus,
-  IndianRupee,
+  Banknote,
   Phone,
   CheckCircle2,
   Calendar,
@@ -187,88 +187,94 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6 animate-page">
-      {/* ===== Page Header ===== */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
-            <span className="gradient-text">Dashboard</span>
-            <Sparkles className="w-5 h-5 text-amber-500" />
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Real-time business overview — {customers.length} customers tracked
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link href="/dashboard/customers/new">
-            <Button size="sm" className="gap-1.5 shadow-md shadow-primary/20">
-              <Plus className="w-4 h-4" />
-              New Sale
-            </Button>
-          </Link>
-          <Link href="/dashboard/investors/new">
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <Wallet className="w-4 h-4" />
-              Add Investor
-            </Button>
-          </Link>
+    <div className="space-y-8 animate-page">
+      {/* ===== Hero Header Banner ===== */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-600/10 via-teal-600/10 to-cyan-600/10 border border-emerald-500/25 p-6 sm:p-8 backdrop-blur-xl">
+        <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-emerald-500/10 blur-[90px] pointer-events-none" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-1.5 max-w-xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-500 dark:text-emerald-400 mb-1">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Real-Time Sales Operations</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight font-heading">
+              Executive <span className="gradient-text">Overview</span>
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground font-medium">
+              Live tracking for {customers.length} active customer accounts, {investors.length} investment portfolios & recovery pipelines.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <Link href="/dashboard/customers/new">
+              <Button size="lg" className="gap-2 font-bold text-xs uppercase tracking-wider gradient-primary rounded-xl shadow-lg shadow-emerald-500/25">
+                <Plus className="w-4 h-4" />
+                New Sale
+              </Button>
+            </Link>
+            <Link href="/dashboard/investors">
+              <Button variant="outline" size="lg" className="gap-2 font-bold text-xs border-border/60 bg-card/70 backdrop-blur-md rounded-xl hover:bg-accent">
+                <Wallet className="w-4 h-4 text-emerald-500" />
+                Capital
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 
       {/* ===== Stats Grid ===== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        <Link href="/dashboard/customers" className="block transition-transform hover:scale-[1.02]">
+        <Link href="/dashboard/customers" className="block">
           <StatsCard
             title="Active Sales"
             value={String(activeInstallments)}
-            description={`${customers.length} total customers →`}
+            description={`${customers.length} Total Registered →`}
             icon={Users}
             iconColor="text-blue-500"
-            iconBg="bg-blue-500/10 border border-blue-500/20"
+            iconBg="bg-blue-500/10 border border-blue-500/25"
             glowClass="stat-glow-blue"
           />
         </Link>
-        <Link href="/dashboard/investors" className="block transition-transform hover:scale-[1.02]">
+        <Link href="/dashboard/investors" className="block">
           <StatsCard
             title="Total Investment"
             value={formatCurrency(totalInvestment)}
-            description={`${investors.length} investors →`}
+            description={`${investors.length} Active Partners →`}
             icon={Wallet}
             iconColor="text-violet-500"
-            iconBg="bg-violet-500/10 border border-violet-500/20"
+            iconBg="bg-violet-500/10 border border-violet-500/25"
             glowClass="stat-glow-violet"
           />
         </Link>
-        <Link href="/dashboard/recovery" className="block transition-transform hover:scale-[1.02]">
+        <Link href="/dashboard/recovery" className="block">
           <StatsCard
             title="This Month"
             value={formatCurrency(thisMonthCollected)}
-            description="Recovery collected →"
-            icon={IndianRupee}
+            description="Total Recovered →"
+            icon={Banknote}
             iconColor="text-emerald-500"
-            iconBg="bg-emerald-500/10 border border-emerald-500/20"
+            iconBg="bg-emerald-500/10 border border-emerald-500/25"
             glowClass="stat-glow-green"
           />
         </Link>
-        <Link href="/dashboard/customers" className="block transition-transform hover:scale-[1.02]">
+        <Link href="/dashboard/customers" className="block">
           <StatsCard
-            title="Overdue"
+            title="Overdue Accounts"
             value={String(overdueCount)}
-            description="Installments overdue →"
+            description="Requires Followup →"
             icon={AlertTriangle}
             iconColor="text-red-500"
-            iconBg="bg-red-500/10 border border-red-500/20"
+            iconBg="bg-red-500/10 border border-red-500/25"
             glowClass="stat-glow-red"
           />
         </Link>
-        <Link href="/dashboard/customers" className="block transition-transform hover:scale-[1.02]">
+        <Link href="/dashboard/customers" className="block">
           <StatsCard
             title="Due Soon"
             value={String(dueSoonCount)}
-            description="Within 3 days →"
+            description="Within 3 Days →"
             icon={Clock}
             iconColor="text-amber-500"
-            iconBg="bg-amber-500/10 border border-amber-500/20"
+            iconBg="bg-amber-500/10 border border-amber-500/25"
             glowClass="stat-glow-yellow"
           />
         </Link>
@@ -276,81 +282,81 @@ export default function DashboardPage() {
 
       {/* ===== Content Grid ===== */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Customers */}
-        <Card>
-          <CardHeader className="pb-3">
+        {/* Recent Customers Card */}
+        <Card className="glass-card border-border/50">
+          <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/10">
-                  <Users className="w-4 h-4 text-blue-500" />
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                  <Users className="w-5 h-5 text-blue-500" />
                 </div>
                 <div>
-                  <CardTitle className="text-sm font-semibold">Recent Customers</CardTitle>
-                  <CardDescription className="text-xs">Latest installment sales</CardDescription>
+                  <CardTitle className="text-base font-bold font-heading">Recent Customers</CardTitle>
+                  <CardDescription className="text-xs">Latest installment contracts</CardDescription>
                 </div>
               </div>
               <Link href="/dashboard/customers">
-                <Button variant="ghost" size="sm" className="text-xs gap-1 text-primary hover:text-primary">
+                <Button variant="ghost" size="sm" className="text-xs font-bold gap-1 text-primary hover:bg-primary/10 rounded-xl">
                   View All
-                  <ArrowUpRight className="w-3 h-3" />
+                  <ArrowUpRight className="w-3.5 h-3.5" />
                 </Button>
               </Link>
             </div>
           </CardHeader>
           <CardContent>
             {customers.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 text-center">
-                <div className="w-14 h-14 rounded-2xl bg-muted/80 flex items-center justify-center mb-3">
-                  <Users className="w-7 h-7 text-muted-foreground" />
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-muted/60 flex items-center justify-center mb-3">
+                  <Users className="w-8 h-8 text-muted-foreground" />
                 </div>
-                <p className="text-sm font-medium text-muted-foreground">No customers yet</p>
+                <p className="text-sm font-bold">No customers found</p>
                 <p className="text-xs text-muted-foreground mt-1 mb-4">
-                  Start by adding your first sale
+                  Create your first mobile installment contract
                 </p>
                 <Link href="/dashboard/customers/new">
-                  <Button variant="outline" size="sm" className="gap-1.5">
-                    <Plus className="w-3.5 h-3.5" />
+                  <Button variant="outline" size="sm" className="gap-1.5 font-semibold rounded-xl">
+                    <Plus className="w-4 h-4" />
                     Add First Sale
                   </Button>
                 </Link>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {customers.slice(0, 5).map((c) => {
                   const status = c.status === "active" ? getInstallmentStatus(c.nextDueDate) : "paid";
                   return (
                     <Link href={`/dashboard/customers/${c.id}`} key={c.id} className="block">
-                      <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border/40 hover:bg-blue-500/10 hover:border-blue-500/40 hover:scale-[1.01] transition-all cursor-pointer group shadow-sm">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 text-primary flex items-center justify-center font-bold text-xs border border-blue-500/10">
+                      <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/20 border border-border/40 hover:bg-blue-500/10 hover:border-blue-500/30 hover:shadow-md transition-all cursor-pointer group">
+                        <div className="flex items-center gap-3.5">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 via-indigo-500/20 to-violet-500/20 text-primary flex items-center justify-center font-extrabold text-sm border border-blue-500/20 shrink-0">
                             {(c.name || "C").charAt(0).toUpperCase()}
                           </div>
-                          <div>
-                            <p className="text-xs font-semibold group-hover:text-primary transition-colors flex items-center gap-1.5">
+                          <div className="space-y-0.5">
+                            <p className="text-xs font-bold group-hover:text-primary transition-colors flex items-center gap-2">
                               <span>{c.name || "Customer"}</span>
-                              <span className="text-[10px] text-muted-foreground font-mono bg-background/60 px-1 rounded">#{c.idNumber}</span>
+                              <span className="text-[10px] text-muted-foreground font-mono bg-background/80 px-1.5 py-0.5 rounded border border-border/50">#{c.idNumber}</span>
                             </p>
-                            <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                              <Smartphone className="w-3 h-3 text-primary" /> {c.mobileCompany} {c.mobileModel}
+                            <p className="text-[11px] text-muted-foreground font-medium flex items-center gap-1">
+                              <Smartphone className="w-3.5 h-3.5 text-primary" /> {c.mobileCompany} {c.mobileModel}
                             </p>
                           </div>
                         </div>
                         <div className="text-right flex items-center gap-3">
                           <div>
-                            <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                            <p className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
                               {formatCurrency(c.monthlyInstallment)}/mo
                             </p>
-                            <p className="text-[10px] text-muted-foreground">
+                            <p className="text-[10px] font-medium text-muted-foreground">
                               Rem: {formatCurrency(c.remainingAmount)}
                             </p>
                           </div>
                           {status === "overdue" && (
-                            <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" title="Overdue" />
+                            <div className="w-2.5 h-2.5 rounded-full bg-red-500 ring-4 ring-red-500/20 animate-pulse" title="Overdue" />
                           )}
                           {status === "due-soon" && (
-                            <div className="w-2.5 h-2.5 rounded-full bg-amber-500" title="Due Soon" />
+                            <div className="w-2.5 h-2.5 rounded-full bg-amber-500 ring-4 ring-amber-500/20" title="Due Soon" />
                           )}
-                          <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                          <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-transform" />
                         </div>
                       </div>
                     </Link>
@@ -361,46 +367,46 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Investors Overview */}
-        <Card>
-          <CardHeader className="pb-3">
+        {/* Investors Overview Card */}
+        <Card className="glass-card border-border/50">
+          <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-violet-500/10">
-                  <Wallet className="w-4 h-4 text-violet-500" />
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20">
+                  <Wallet className="w-5 h-5 text-violet-500" />
                 </div>
                 <div>
-                  <CardTitle className="text-sm font-semibold">Investors Overview</CardTitle>
-                  <CardDescription className="text-xs">Capital & balance status</CardDescription>
+                  <CardTitle className="text-base font-bold font-heading">Investors Overview</CardTitle>
+                  <CardDescription className="text-xs">Capital deployment status</CardDescription>
                 </div>
               </div>
               <Link href="/dashboard/investors">
-                <Button variant="ghost" size="sm" className="text-xs gap-1 text-primary hover:text-primary">
+                <Button variant="ghost" size="sm" className="text-xs font-bold gap-1 text-violet-500 hover:bg-violet-500/10 rounded-xl">
                   View All
-                  <ArrowUpRight className="w-3 h-3" />
+                  <ArrowUpRight className="w-3.5 h-3.5" />
                 </Button>
               </Link>
             </div>
           </CardHeader>
           <CardContent>
             {investors.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 text-center">
-                <div className="w-14 h-14 rounded-2xl bg-muted/80 flex items-center justify-center mb-3">
-                  <Wallet className="w-7 h-7 text-muted-foreground" />
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-muted/60 flex items-center justify-center mb-3">
+                  <Wallet className="w-8 h-8 text-muted-foreground" />
                 </div>
-                <p className="text-sm font-medium text-muted-foreground">No investors yet</p>
+                <p className="text-sm font-bold">No investors found</p>
                 <p className="text-xs text-muted-foreground mt-1 mb-4">
-                  Add investors to track capital
+                  Add partners to track business capital
                 </p>
                 <Link href="/dashboard/investors/new">
-                  <Button variant="outline" size="sm" className="gap-1.5">
-                    <Plus className="w-3.5 h-3.5" />
+                  <Button variant="outline" size="sm" className="gap-1.5 font-semibold rounded-xl">
+                    <Plus className="w-4 h-4" />
                     Add Investor
                   </Button>
                 </Link>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {investors.slice(0, 5).map((inv) => {
                   const totalInv = inv.totalInvestment || 0;
                   const availBal = inv.availableBalance ?? totalInv;
@@ -409,36 +415,36 @@ export default function DashboardPage() {
                     : 0;
                   return (
                     <Link href="/dashboard/investors" key={inv.id} className="block">
-                      <div className="p-3 rounded-xl bg-muted/30 border border-border/40 hover:bg-violet-500/10 hover:border-violet-500/40 hover:scale-[1.01] transition-all cursor-pointer group shadow-sm">
-                        <div className="flex items-center justify-between mb-2">
+                      <div className="p-3.5 rounded-2xl bg-muted/20 border border-border/40 hover:bg-violet-500/10 hover:border-violet-500/30 hover:shadow-md transition-all cursor-pointer group">
+                        <div className="flex items-center justify-between mb-2.5">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 text-violet-600 dark:text-violet-400 flex items-center justify-center font-bold text-xs border border-violet-500/10">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 text-violet-500 flex items-center justify-center font-bold text-xs border border-violet-500/20 shrink-0">
                               <Wallet className="w-4 h-4" />
                             </div>
                             <div>
-                              <p className="text-xs font-semibold group-hover:text-violet-500 transition-colors flex items-center gap-1">
+                              <p className="text-xs font-bold group-hover:text-violet-500 transition-colors flex items-center gap-1">
                                 {inv.fullName || "Investor"}
                               </p>
-                              <p className="text-[11px] text-muted-foreground">
-                                Ratio: {inv.sharingRatio}% / {100 - inv.sharingRatio}%
+                              <p className="text-[11px] font-medium text-muted-foreground">
+                                Profit Ratio: {inv.sharingRatio}% / {100 - inv.sharingRatio}%
                               </p>
                             </div>
                           </div>
                           <div className="text-right flex items-center gap-2">
                             <div>
-                              <p className="text-xs font-bold text-primary">
+                              <p className="text-xs font-extrabold text-primary">
                                 {formatCurrency(inv.totalInvestment)}
                               </p>
-                              <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                              <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
                                 Avail: {formatCurrency(inv.availableBalance ?? inv.totalInvestment)}
                               </p>
                             </div>
-                            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-violet-500 group-hover:translate-x-1 transition-all" />
+                            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-violet-500 group-hover:translate-x-1 transition-transform" />
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Progress value={usagePercent} className="h-1.5 flex-1" />
-                          <span className="text-[10px] text-muted-foreground font-medium w-8 text-right">{usagePercent}%</span>
+                        <div className="flex items-center gap-2.5">
+                          <Progress value={usagePercent} className="h-2 flex-1 rounded-full bg-muted/50" />
+                          <span className="text-[10px] text-muted-foreground font-extrabold w-8 text-right font-mono">{usagePercent}%</span>
                         </div>
                       </div>
                     </Link>
@@ -452,3 +458,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

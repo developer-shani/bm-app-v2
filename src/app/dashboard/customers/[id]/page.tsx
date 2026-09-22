@@ -40,7 +40,7 @@ import {
   Camera,
   ExternalLink,
   Ban,
-  IndianRupee,
+  Banknote,
   Trash2,
   Edit,
   History
@@ -495,7 +495,7 @@ export default function CustomerDetailPage() {
       {/* Financial Summary */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2"><IndianRupee className="w-4 h-4 text-primary" /> Financial Summary</CardTitle>
+          <CardTitle className="text-base flex items-center gap-2"><Banknote className="w-4 h-4 text-primary" /> Financial Summary</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

@@ -45,7 +45,7 @@ import {
   Loader2,
   CheckCircle2,
   Trash2,
-  IndianRupee,
+  Banknote,
   Fingerprint,
   Copy,
   Share2,
@@ -736,7 +736,7 @@ export default function NewSalePage() {
           {purchasePrice && advancePayment && installmentMonths && (
             <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl p-5 space-y-3 animate-fade-in border border-primary/20">
               <h4 className="text-sm font-semibold flex items-center gap-2">
-                <IndianRupee className="w-4 h-4 text-primary" />
+                <Banknote className="w-4 h-4 text-primary" />
                 Installment Breakdown
               </h4>
               <Separator />
@@ -902,7 +902,7 @@ export default function NewSalePage() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-base flex items-center gap-2">
-                <IndianRupee className="w-4 h-4 text-primary" />
+                <Banknote className="w-4 h-4 text-primary" />
                 Expenses
               </CardTitle>
               <CardDescription>Default: Rs. 2,000 (split by ratio)</CardDescription>

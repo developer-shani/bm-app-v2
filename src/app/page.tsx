@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Smartphone, Lock, Mail, Eye, EyeOff, Loader2, ShieldCheck, Wallet, Handshake } from "lucide-react";
+import { Smartphone, Lock, Mail, Eye, EyeOff, Loader2, ShieldCheck, Sparkles, ArrowRight } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -82,59 +82,64 @@ export default function LoginPage() {
   }, [appUser, autoLoginDone, signIn]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
-      {/* Background Effects */}
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden selection:bg-emerald-500/30">
+      {/* Dynamic Ambient Background Orbs & Effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-blue-500/5 blur-[100px]" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-indigo-500/10 blur-[100px]" />
-        <div className="absolute top-1/3 left-1/4 w-64 h-64 rounded-full bg-violet-500/3 blur-[80px]" />
-        {/* Subtle grid pattern */}
+        <div className="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full bg-emerald-500/10 blur-[130px] animate-pulse" />
+        <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full bg-teal-500/15 blur-[130px] animate-pulse" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-cyan-500/5 blur-[150px]" />
+        
+        {/* Subtle grid mesh */}
         <div 
-          className="absolute inset-0 opacity-[0.02]"
+          className="absolute inset-0 opacity-[0.03]"
           style={{
             backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
-            backgroundSize: '32px 32px',
+            backgroundSize: '40px 40px',
           }}
         />
       </div>
 
-      <div className="w-full max-w-[420px] animate-page relative z-10">
-        {/* Logo & Brand */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-xl shadow-blue-500/20 mb-5">
+      <div className="w-full max-w-[440px] animate-page relative z-10 space-y-6">
+        {/* Logo & Brand Header */}
+        <div className="text-center space-y-2">
+          <div className="inline-flex relative items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-600 shadow-2xl shadow-emerald-500/30 ring-4 ring-emerald-500/20">
             <Smartphone className="w-8 h-8 text-white" />
+            <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-400 border-2 border-background ring-2 ring-emerald-400/40 animate-ping" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h1 className="text-3xl font-extrabold tracking-tight font-heading mt-3">
             Brother <span className="gradient-text">Mobiles</span>
           </h1>
-          <p className="text-sm text-muted-foreground mt-1.5 font-medium">
-            Installment Sales Manager
+          <p className="text-xs text-muted-foreground font-semibold flex items-center justify-center gap-1.5 uppercase tracking-widest">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+            Installment Sales & Business OS
           </p>
         </div>
 
         {/* Login Card */}
-        <Card className="glass-card border-border/30 overflow-hidden">
-          {/* Top gradient line */}
-          <div className="h-1 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500" />
+        <Card className="glass-card border-border/50 overflow-hidden shadow-2xl backdrop-blur-2xl">
+          {/* Glowing Top Ambient Line */}
+          <div className="h-1 w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
           
-          <CardHeader className="space-y-1 pb-4 pt-6">
-            <CardTitle className="text-xl text-center font-bold">Welcome Back</CardTitle>
-            <CardDescription className="text-center text-sm">
-              Apna account login karein
+          <CardHeader className="space-y-1 pb-2 pt-6 text-center">
+            <CardTitle className="text-2xl font-bold font-heading">Welcome Back</CardTitle>
+            <CardDescription className="text-xs font-medium">
+              Aap apne credentials enter karke login karein
             </CardDescription>
           </CardHeader>
-          <CardContent>
+
+          <CardContent className="pt-4">
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Error Message */}
+              {/* Error Alert */}
               {error && (
-                <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-xl p-3.5 animate-fade-in font-medium">
+                <div className="bg-destructive/15 border border-destructive/30 text-destructive text-xs rounded-xl p-3.5 animate-page font-semibold flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-destructive animate-pulse shrink-0" />
                   {error}
                 </div>
               )}
 
               {/* Email Field */}
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium">
+                <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   Email Address
                 </Label>
                 <div className="relative">
@@ -142,10 +147,10 @@ export default function LoginPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="aapka@email.com"
+                    placeholder="admin@brothermobiles.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 h-11 bg-muted/30 border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all"
+                    className="pl-10 h-11 bg-muted/30 border-border/60 rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
                     disabled={isLoading}
                     autoComplete="email"
                   />
@@ -154,7 +159,7 @@ export default function LoginPage() {
 
               {/* Password Field */}
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium">
+                <Label htmlFor="password" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   Password
                 </Label>
                 <div className="relative">
@@ -162,17 +167,17 @@ export default function LoginPage() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Password enter karein"
+                    placeholder="Enter password..."
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 h-11 bg-muted/30 border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all"
+                    className="pl-10 pr-10 h-11 bg-muted/30 border-border/60 rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
                     disabled={isLoading}
                     autoComplete="current-password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
                     tabIndex={-1}
                   >
                     {showPassword ? (
@@ -187,29 +192,34 @@ export default function LoginPage() {
               {/* Submit Button */}
               <Button
                 type="submit"
-                className="w-full h-11 text-sm font-semibold gradient-primary hover:opacity-90 transition-all rounded-xl shadow-lg shadow-primary/20"
+                className="w-full h-11 text-xs font-bold tracking-wider uppercase gradient-primary rounded-xl shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all gap-2 group mt-2"
                 disabled={isLoading}
                 size="lg"
               >
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Logging in...
+                    Authenticating...
                   </>
                 ) : (
-                  "Sign In"
+                  <>
+                    Sign In to Portal
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </>
                 )}
               </Button>
             </form>
-
-            
           </CardContent>
         </Card>
 
         {/* Footer */}
-        <p className="text-center text-xs text-muted-foreground mt-6 font-medium">
-          Powered by Brother Mobiles &copy; {new Date().getFullYear()}
-        </p>
+        <div className="flex items-center justify-between text-xs text-muted-foreground font-semibold px-2">
+          <span className="flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4 text-emerald-500" />
+            256-Bit Encrypted
+          </span>
+          <span>Brother Mobiles &copy; {new Date().getFullYear()}</span>
+        </div>
       </div>
     </div>
   );

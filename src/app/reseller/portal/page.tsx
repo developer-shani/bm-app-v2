@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
@@ -28,7 +28,7 @@ import {
   Sun,
   Moon,
   Info,
-  IndianRupee,
+  Banknote,
   UserCog,
   User,
   Loader2,
@@ -198,7 +198,7 @@ export default function ResellerPortalPage() {
                   <p className="text-2xl font-bold mt-1 text-green-500">{formatCurrency(totalCommission)}</p>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
-                  <IndianRupee className="w-5 h-5 text-green-500" />
+                  <Banknote className="w-5 h-5 text-green-500" />
                 </div>
               </div>
             </CardContent>
