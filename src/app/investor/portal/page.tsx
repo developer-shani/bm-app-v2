@@ -805,6 +805,14 @@ export default function InvestorPortalPage() {
                 >
                   9 Months ({customers.filter((c) => c.installmentMonths === 9).length})
                 </Button>
+                <Button
+                  variant={planFilter === "12" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setPlanFilter("12")}
+                  className="text-[11px] h-7 px-2.5"
+                >
+                  12 Months ({customers.filter((c) => c.installmentMonths === 12).length})
+                </Button>
               </div>
             </div>
           </CardHeader>

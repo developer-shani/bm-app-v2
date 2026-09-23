@@ -160,6 +160,22 @@ export default function DashboardPage() {
     const completedCount = customers.filter((c) => c.status === "completed").length;
     const totalInvestment = investors.reduce((sum, inv) => sum + (inv.totalInvestment || 0), 0);
     const totalProfit = customers.reduce((sum, c) => sum + (c.profitAmount || 0), 0);
+
+    // Calculate admin's estimated profit by splitting each customer's profit
+    // using the investor's sharing ratio: admin gets (100 - investorRatio)%
+    const investorMap = new Map(investors.map((inv) => [inv.id, inv.sharingRatio]));
+    let adminEstimatedProfit = 0;
+    let totalExpenses = 0;
+    customers.forEach((c) => {
+      const profit = c.profitAmount || 0;
+      const custExpenses = (c.expenses || []).reduce((s, e) => s + (e.amount || 0), 0);
+      totalExpenses += custExpenses;
+      const netProfit = profit - custExpenses;
+      const investorRatio = investorMap.get(c.investorId) ?? 50;
+      const adminShare = Math.round((netProfit * (100 - investorRatio)) / 100);
+      adminEstimatedProfit += adminShare;
+    });
+
     const overdueCount = customers.filter(
       (c) => c.status === "active" && getInstallmentStatus(c.nextDueDate) === "overdue"
     ).length;
@@ -184,6 +200,8 @@ export default function DashboardPage() {
       completedCount,
       totalInvestment,
       totalProfit,
+      adminEstimatedProfit,
+      totalExpenses,
       overdueCount,
       dueSoonCount,
       thisMonthCollected,
@@ -321,8 +339,8 @@ export default function DashboardPage() {
           </Card>
         </Link>
 
-        {/* Total Profit */}
-        <Link href="/dashboard/customers" className="group block">
+        {/* Total Profit + Admin Estimated */}
+        <Link href="/dashboard/reports" className="group block">
           <Card className="relative overflow-hidden border-border/60 hover:border-amber-500/40 hover:shadow-xl hover:shadow-amber-500/5 transition-all duration-300 hover:-translate-y-1 h-full">
             <div className="absolute top-0 right-0 w-28 h-28 bg-amber-500/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/4 group-hover:bg-amber-500/10 transition-all" />
             <CardContent className="p-5 relative">
@@ -334,11 +352,21 @@ export default function DashboardPage() {
                   Profit
                 </Badge>
               </div>
-              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Total Earnings</p>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">All Profit</p>
               <p className="text-2xl font-extrabold tracking-tight">{formatCurrency(stats.totalProfit)}</p>
-              <div className="flex items-center gap-1.5 mt-2 text-amber-500">
-                <Zap className="w-3.5 h-3.5" />
-                <span className="text-[11px] font-bold">{stats.completedCount} Completed Sales</span>
+              
+              {/* Admin's estimated share */}
+              <div className="mt-3 pt-3 border-t border-amber-500/10">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <div className="w-4 h-4 rounded-md bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center">
+                    <TrendingUp className="w-2.5 h-2.5 text-emerald-500" />
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Your Estimated Profit</span>
+                </div>
+                <p className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight">{formatCurrency(stats.adminEstimatedProfit)}</p>
+                {stats.totalExpenses > 0 && (
+                  <p className="text-[9px] font-medium text-muted-foreground mt-0.5">After Rs.{stats.totalExpenses.toLocaleString()} expenses</p>
+                )}
               </div>
             </CardContent>
           </Card>
