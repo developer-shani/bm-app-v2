@@ -52,6 +52,7 @@ import {
   Key,
 } from "lucide-react";
 import { db, storage } from "@/lib/firebase";
+import { triggerAutoBackup } from "@/lib/backup";
 import { collection, addDoc, getDocs, query, orderBy, updateDoc, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useAuth } from "@/hooks/use-auth";
@@ -507,6 +508,9 @@ export default function NewSalePage() {
           pendingCommission: reseller.pendingCommission + calculations.referralAmount,
         });
       }
+
+      // Trigger auto-backup after successful sale creation
+      triggerAutoBackup();
 
       toast.success(`Sale successfully create hogayi! Customer ID: #${idNumber}`);
       router.push("/dashboard/customers");

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -21,37 +22,37 @@ import {
   Upload,
   MessageSquare,
   Save,
-  Trash2,
-  ShieldAlert,
   Lock,
-  RefreshCw,
   AlertTriangle,
   CheckCircle2,
   Database,
+  Download,
+  HardDrive,
+  RefreshCw,
+  Trash2,
+  Shield,
+  Clock,
+  FileUp,
+  FileDown,
+  Zap,
+  Archive,
+  Loader2,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { db } from "@/lib/firebase";
-import { collection, getDocs, writeBatch, doc } from "firebase/firestore";
-
-interface CollectionResetOption {
-  id: string;
-  name: string;
-  description: string;
-  collectionName: string;
-}
-
-const RESET_OPTIONS: CollectionResetOption[] = [
-  { id: "customers", name: "Customers & Sales Accounts", description: "All active & completed installment customer records", collectionName: "customers" },
-  { id: "recoveries", name: "Recoveries & Payments", description: "All collection payments & installment transaction logs", collectionName: "recoveries" },
-  { id: "investors", name: "Investors & Capital Accounts", description: "All investor profiles, share percentages & ledgers", collectionName: "investors" },
-  { id: "investments", name: "Investment & Deposit Logs", description: "All capital deposit transaction history", collectionName: "investments" },
-  { id: "withdrawals", name: "Withdrawal Requests & Logs", description: "All investor profit/capital payout logs", collectionName: "withdrawals" },
-  { id: "resellers", name: "Resellers & Agents", description: "All reseller profiles & commission records", collectionName: "resellers" },
-  { id: "pending_approvals", name: "Pending Approvals", description: "Unapproved sales & withdrawal requests", collectionName: "pending_approvals" },
-  { id: "deleted_records", name: "Trash & Soft-deleted Records", description: "Recycle bin history", collectionName: "deleted_records" },
-  { id: "notifications", name: "System Notifications", description: "All alert notifications", collectionName: "notifications" },
-];
+import {
+  createBackup,
+  getBackupList,
+  deleteBackup,
+  exportBackupAsFile,
+  parseImportFile,
+  restoreBackupToFirestore,
+  getAutoBackupEnabled,
+  setAutoBackupEnabled as setAutoBackupPref,
+  formatBackupSize,
+  BackupMeta,
+  BackupData,
+} from "@/lib/backup";
 
 export default function SettingsPage() {
   const [companyName, setCompanyName] = useState("Brother Mobiles");
@@ -63,101 +64,140 @@ export default function SettingsPage() {
     `Assalam o Alaikum {customerName},\n\nAapki installment #{installmentNumber}/{totalInstallments} ki payment Rs. {pendingAmount} ki due date {dueDate} hai.\n\nShukriya,\n{companyName}`
   );
 
-  // Reset Modal state
-  const [isResetOpen, setIsResetOpen] = useState(false);
-  const [enteredPin, setEnteredPin] = useState("");
-  const [selectedCollections, setSelectedCollections] = useState<string[]>(
-    RESET_OPTIONS.map((o) => o.id)
-  );
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteProgress, setDeleteProgress] = useState("");
+  // Backup State
+  const [autoBackup, setAutoBackup] = useState(true);
+  const [backups, setBackups] = useState<BackupMeta[]>([]);
+  const [isCreatingBackup, setIsCreatingBackup] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [restoreProgress, setRestoreProgress] = useState("");
+
+  // Import Dialog State
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [importData, setImportData] = useState<BackupData | null>(null);
+  const [importPin, setImportPin] = useState("");
+  const [importFileName, setImportFileName] = useState("");
+
+  // Load backup list and auto-backup pref
+  const refreshBackups = useCallback(() => {
+    setBackups(getBackupList());
+    setAutoBackup(getAutoBackupEnabled());
+  }, []);
+
+  useEffect(() => {
+    refreshBackups();
+  }, [refreshBackups]);
 
   const handleSave = () => {
     toast.success("Settings saved successfully!");
   };
 
-  const toggleCollection = (id: string) => {
-    setSelectedCollections((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
+  // ── Create Manual Backup ──
+  const handleCreateBackup = async () => {
+    setIsCreatingBackup(true);
+    const toastId = toast.loading("Creating backup...");
+    try {
+      const meta = await createBackup("manual");
+      toast.success("Backup created successfully!", {
+        id: toastId,
+        description: `${meta.totalRecords} records saved (${formatBackupSize(meta.sizeBytes)})`,
+      });
+      refreshBackups();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Backup failed";
+      toast.error("Backup failed!", { id: toastId, description: msg });
+    } finally {
+      setIsCreatingBackup(false);
+    }
   };
 
-  const selectAllCollections = () => {
-    setSelectedCollections(RESET_OPTIONS.map((o) => o.id));
+  // ── Toggle Auto-Backup ──
+  const handleAutoBackupToggle = (checked: boolean) => {
+    setAutoBackup(checked);
+    setAutoBackupPref(checked);
+    toast.success(checked ? "Auto-backup enabled" : "Auto-backup disabled", {
+      description: checked
+        ? "System will create backups when new data is added"
+        : "Auto-backups turned off — create backups manually",
+    });
   };
 
-  const deselectAllCollections = () => {
-    setSelectedCollections([]);
+  // ── Export Backup ──
+  const handleExport = (id: string) => {
+    const ok = exportBackupAsFile(id);
+    if (ok) {
+      toast.success("Backup downloaded!", { description: "JSON file saved to your Downloads folder" });
+    } else {
+      toast.error("Could not export — backup not found in storage");
+    }
   };
 
-  // Perform wipe of selected Firestore collections
-  const handleSystemReset = async () => {
-    if (enteredPin.trim() !== secretPin.trim()) {
-      toast.error("Incorrect Secret PIN! Access Denied.", {
-        description: "Standard PIN is 8208. Please check and try again.",
+  // ── Delete Backup ──
+  const handleDeleteBackup = (id: string) => {
+    deleteBackup(id);
+    refreshBackups();
+    toast.success("Backup deleted");
+  };
+
+  // ── Import: File Selection ──
+  const handleImportFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportFileName(file.name);
+
+    const toastId = toast.loading("Reading backup file...");
+    const data = await parseImportFile(file);
+
+    if (!data) {
+      toast.error("Invalid backup file!", {
+        id: toastId,
+        description: "File format not recognized. Use a Brother Mobiles backup JSON file.",
       });
       return;
     }
 
-    if (selectedCollections.length === 0) {
-      toast.error("Please select at least one data category to delete.");
+    toast.dismiss(toastId);
+    setImportData(data);
+    setImportPin("");
+    setIsImportOpen(true);
+
+    // Reset file input
+    e.target.value = "";
+  };
+
+  // ── Import: Restore ──
+  const handleRestore = async () => {
+    if (!importData) return;
+    if (importPin.trim() !== secretPin.trim()) {
+      toast.error("Incorrect Security PIN! Access Denied.");
       return;
     }
 
-    setIsDeleting(true);
-    const toastId = toast.loading("Initiating System Data Wipe...");
+    setIsRestoring(true);
+    const toastId = toast.loading("Restoring backup to database...");
 
     try {
-      let totalDeletedCount = 0;
-
-      for (const targetId of selectedCollections) {
-        const option = RESET_OPTIONS.find((o) => o.id === targetId);
-        if (!option) continue;
-
-        setDeleteProgress(`Clearing ${option.name}...`);
-        toast.loading(`Wiping ${option.name}...`, { id: toastId });
-
-        const colRef = collection(db, option.collectionName);
-        const snapshot = await getDocs(colRef);
-
-        if (!snapshot.empty) {
-          let batch = writeBatch(db);
-          let count = 0;
-
-          for (const docSnap of snapshot.docs) {
-            batch.delete(doc(db, option.collectionName, docSnap.id));
-            count++;
-            totalDeletedCount++;
-
-            if (count === 400) {
-              await batch.commit();
-              batch = writeBatch(db);
-              count = 0;
-            }
-          }
-
-          if (count > 0) {
-            await batch.commit();
-          }
-        }
-      }
-
-      toast.success("🎉 Factory Data Reset Complete!", {
-        id: toastId,
-        description: `Successfully wiped ${totalDeletedCount} test record(s) from Firebase.`,
+      const count = await restoreBackupToFirestore(importData, (msg) => {
+        setRestoreProgress(msg);
+        toast.loading(msg, { id: toastId });
       });
 
-      setIsResetOpen(false);
-      setEnteredPin("");
+      toast.success("🎉 Backup restored successfully!", {
+        id: toastId,
+        description: `${count} records restored to Firestore. Page will refresh.`,
+      });
+
+      setIsImportOpen(false);
+      setImportData(null);
+      setImportPin("");
+
+      // Refresh the page after a short delay
+      setTimeout(() => window.location.reload(), 2000);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to reset system data";
-      toast.error("Data Wipe Failed!", {
-        id: toastId,
-        description: message,
-      });
+      const msg = err instanceof Error ? err.message : "Restore failed";
+      toast.error("Restore failed!", { id: toastId, description: msg });
     } finally {
-      setIsDeleting(false);
-      setDeleteProgress("");
+      setIsRestoring(false);
+      setRestoreProgress("");
     }
   };
 
@@ -166,7 +206,7 @@ export default function SettingsPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">System Settings</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Manage shop configurations, default values, SMS templates & testing options
+          Manage shop configurations, default values, SMS templates & data backups
         </p>
       </div>
 
@@ -235,7 +275,7 @@ export default function SettingsPage() {
 
           <div className="pt-2 space-y-2">
             <Label className="flex items-center gap-2">
-              <Lock className="w-3.5 h-3.5 text-amber-600" /> Master Secret Reset Security PIN
+              <Lock className="w-3.5 h-3.5 text-amber-600" /> Master Security PIN
             </Label>
             <Input
               type="text"
@@ -245,7 +285,7 @@ export default function SettingsPage() {
               className="max-w-xs font-mono font-bold tracking-wider"
             />
             <p className="text-xs text-muted-foreground">
-              This secret code is required to confirm full system data deletion / test reset.
+              This secret code is required to confirm data restore operations.
             </p>
           </div>
         </CardContent>
@@ -275,149 +315,265 @@ export default function SettingsPage() {
         <Save className="w-4 h-4" /> Save Preferences
       </Button>
 
-      {/* ================= DANGER ZONE / SYSTEM RESET ================= */}
-      <Card className="border-red-500/30 bg-red-500/5 dark:bg-red-950/20 backdrop-blur-xl rounded-2xl overflow-hidden mt-10">
-        <CardHeader className="border-b border-red-500/20 bg-red-500/10 dark:bg-red-950/30 pb-4">
+      {/* ═══════════════════════════════════════════════════════════════
+          BACKUP & DATA SAFETY
+      ═══════════════════════════════════════════════════════════════ */}
+      <Card className="border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 backdrop-blur-xl rounded-2xl overflow-hidden mt-10">
+        <CardHeader className="border-b border-emerald-500/20 bg-emerald-500/10 dark:bg-emerald-950/30 pb-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5 text-red-600 dark:text-red-400">
-              <ShieldAlert className="w-5 h-5 text-red-600 animate-pulse" />
-              <CardTitle className="text-lg font-bold">Danger Zone — Test Phase Data Reset</CardTitle>
+            <div className="flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400">
+              <Shield className="w-5 h-5" />
+              <CardTitle className="text-lg font-bold">Backup & Data Safety</CardTitle>
             </div>
-            <Badge variant="destructive" className="font-mono text-xs bg-red-600 text-white">
-              Test Mode Utility
+            <Badge className="font-mono text-xs bg-emerald-600 text-white border-0">
+              {backups.length} Backup{backups.length !== 1 ? "s" : ""} Saved
             </Badge>
           </div>
-          <CardDescription className="text-red-900/80 dark:text-red-300/80 mt-1 text-xs sm:text-sm">
-            Wipe all test customers, recoveries, investors, resellers & logs with a single click using secret code <strong>8208</strong>.
+          <CardDescription className="text-emerald-900/80 dark:text-emerald-300/80 mt-1 text-xs sm:text-sm">
+            Automatic & manual backups to protect your business data. Export backups as files and import/restore anytime.
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="p-6 space-y-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-background/60 border border-red-500/20">
-            <div className="space-y-1">
-              <h4 className="text-sm font-semibold flex items-center gap-2 text-foreground">
-                <Trash2 className="w-4 h-4 text-red-500" /> Wipe & Reset All Test Records
-              </h4>
-              <p className="text-xs text-muted-foreground">
-                Permanently clears Firebase collections to start fresh with real shop data.
-              </p>
+        <CardContent className="p-6 space-y-6">
+
+          {/* Auto-Backup Toggle + Create Manual Backup */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-background/60 border border-emerald-500/20">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                  <Zap className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold">Auto-Backup</h4>
+                  <p className="text-[11px] text-muted-foreground">
+                    {autoBackup
+                      ? "System creates backup when new customer/investor is added"
+                      : "Auto-backup is OFF — create backups manually"}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={autoBackup}
+                onCheckedChange={handleAutoBackupToggle}
+              />
             </div>
 
             <Button
-              variant="destructive"
-              className="gap-2 shadow-lg shadow-red-600/20 font-semibold shrink-0"
-              onClick={() => {
-                setEnteredPin("");
-                setIsResetOpen(true);
-              }}
+              onClick={handleCreateBackup}
+              disabled={isCreatingBackup}
+              className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 font-semibold shrink-0"
             >
-              <RefreshCw className="w-4 h-4" /> Clear & Reset Data
+              {isCreatingBackup ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Creating...
+                </>
+              ) : (
+                <>
+                  <HardDrive className="w-4 h-4" /> Create Backup Now
+                </>
+              )}
             </Button>
+          </div>
+
+          {/* Import Backup */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-background/60 border border-blue-500/20">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                <FileUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold">Import & Restore Backup</h4>
+                <p className="text-[11px] text-muted-foreground">
+                  Upload a previously exported backup file to restore your data
+                </p>
+              </div>
+            </div>
+            <label className="shrink-0">
+              <input
+                type="file"
+                accept=".json"
+                className="hidden"
+                onChange={handleImportFileSelect}
+              />
+              <Button variant="outline" className="gap-2 font-semibold border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 cursor-pointer" asChild>
+                <span>
+                  <Upload className="w-4 h-4" /> Upload Backup File
+                </span>
+              </Button>
+            </label>
+          </div>
+
+          {/* Saved Backups List */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <Archive className="w-3.5 h-3.5" />
+                Saved Backups ({backups.length}/10)
+              </h4>
+              <p className="text-[10px] text-muted-foreground">Auto-cleanup: 30 days, max 10</p>
+            </div>
+
+            {backups.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 text-center rounded-xl bg-muted/20 border border-border/40">
+                <div className="w-14 h-14 rounded-2xl bg-muted/60 flex items-center justify-center mb-3">
+                  <Database className="w-6 h-6 text-muted-foreground" />
+                </div>
+                <p className="text-sm font-semibold">No backups yet</p>
+                <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+                  Click &quot;Create Backup Now&quot; to save your first backup, or enable Auto-Backup.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+                {backups.map((b) => {
+                  const date = new Date(b.timestamp);
+                  const timeAgo = getRelativeTime(date);
+                  return (
+                    <div
+                      key={b.id}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-background/60 border border-border/50 hover:border-emerald-500/30 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`p-2 rounded-lg shrink-0 ${b.type === "auto" ? "bg-violet-500/10 border border-violet-500/15" : "bg-emerald-500/10 border border-emerald-500/15"}`}>
+                          {b.type === "auto" ? (
+                            <Zap className="w-4 h-4 text-violet-500" />
+                          ) : (
+                            <HardDrive className="w-4 h-4 text-emerald-500" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-bold truncate">{b.label}</p>
+                            <Badge
+                              variant="outline"
+                              className={`text-[9px] font-bold rounded-md px-1.5 py-0.5 ${
+                                b.type === "auto"
+                                  ? "text-violet-600 bg-violet-500/8 border-violet-500/20"
+                                  : "text-emerald-600 bg-emerald-500/8 border-emerald-500/20"
+                              }`}
+                            >
+                              {b.type === "auto" ? "Auto" : "Manual"}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                              <Clock className="w-2.5 h-2.5" />
+                              {date.toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" })}{" "}
+                              {date.toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" })}
+                              {" · "}{timeAgo}
+                            </span>
+                            <span className="text-[10px] font-mono text-muted-foreground">
+                              {b.totalRecords} records · {formatBackupSize(b.sizeBytes)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5 text-xs font-semibold h-8 rounded-lg border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                          onClick={() => handleExport(b.id)}
+                        >
+                          <FileDown className="w-3.5 h-3.5" />
+                          Export
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1 text-xs font-semibold h-8 rounded-lg text-red-500 hover:bg-red-500/10 hover:text-red-600"
+                          onClick={() => handleDeleteBackup(b.id)}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* SYSTEM RESET CONFIRMATION MODAL */}
-      <Dialog open={isResetOpen} onOpenChange={setIsResetOpen}>
-        <DialogContent className="max-w-xl border-red-500/30">
+      {/* ═══════════════════════════════════════════════════════════════
+          IMPORT / RESTORE CONFIRMATION DIALOG
+      ═══════════════════════════════════════════════════════════════ */}
+      <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
+        <DialogContent className="max-w-xl border-blue-500/30">
           <DialogHeader>
-            <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-                <AlertTriangle className="w-6 h-6 text-red-600" />
+            <div className="flex items-center gap-3 text-blue-600 dark:text-blue-400">
+              <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                <FileUp className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <DialogTitle className="text-xl font-bold">Delete All Test Data (System Reset)</DialogTitle>
+                <DialogTitle className="text-xl font-bold">Restore Backup</DialogTitle>
                 <DialogDescription className="text-xs mt-1">
-                  Targeted Firebase wipe for test phase cleanup.
+                  Import data from: <strong>{importFileName}</strong>
                 </DialogDescription>
               </div>
             </div>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
+            {/* Warning */}
             <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>
-                <strong>Warning:</strong> Selected categories will be completely erased from Firestore. This operation cannot be undone.
+                <strong>Warning:</strong> Restoring a backup will <strong>replace all existing data</strong> in Firestore with the backup data. This cannot be undone.
               </span>
             </div>
 
-            {/* Select/Deselect All Header */}
-            <div className="flex items-center justify-between">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Select Collections to Clear ({selectedCollections.length}/{RESET_OPTIONS.length})
-              </Label>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={selectAllCollections}
-                  className="text-xs text-emerald-600 hover:underline font-medium"
-                >
-                  Select All
-                </button>
-                <span className="text-xs text-muted-foreground">•</span>
-                <button
-                  type="button"
-                  onClick={deselectAllCollections}
-                  className="text-xs text-muted-foreground hover:underline"
-                >
-                  Clear Selection
-                </button>
-              </div>
-            </div>
-
-            {/* Collection Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
-              {RESET_OPTIONS.map((opt) => {
-                const isSelected = selectedCollections.includes(opt.id);
-                return (
-                  <div
-                    key={opt.id}
-                    onClick={() => toggleCollection(opt.id)}
-                    className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-2.5 ${
-                      isSelected
-                        ? "bg-red-500/10 border-red-500/40 text-foreground"
-                        : "bg-muted/20 border-border/60 opacity-60 hover:opacity-100"
-                    }`}
-                  >
+            {/* Backup Info */}
+            {importData && (
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Backup Contents
+                </Label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {Object.entries(importData.meta.recordCounts || {}).map(([col, count]) => (
                     <div
-                      className={`w-4 h-4 rounded mt-0.5 shrink-0 flex items-center justify-center border transition-colors ${
-                        isSelected
-                          ? "bg-red-600 border-red-600 text-white"
-                          : "border-muted-foreground/40"
-                      }`}
+                      key={col}
+                      className="px-3 py-2 rounded-lg bg-muted/40 border border-border/50 text-center"
                     >
-                      {isSelected && <CheckCircle2 className="w-3 h-3 stroke-[3]" />}
+                      <p className="text-sm font-bold">{count as number}</p>
+                      <p className="text-[10px] text-muted-foreground capitalize">{col.replace(/_/g, " ")}</p>
                     </div>
-                    <div className="space-y-0.5">
-                      <p className="text-xs font-semibold leading-none">{opt.name}</p>
-                      <p className="text-[10px] text-muted-foreground line-clamp-1">
-                        {opt.description}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground pt-1">
+                  <span className="flex items-center gap-1">
+                    <Database className="w-3 h-3" />
+                    Total: <strong>{importData.meta.totalRecords}</strong> records
+                  </span>
+                  <span>•</span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    Created: {new Date(importData.meta.timestamp).toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" })}
+                  </span>
+                </div>
+              </div>
+            )}
 
-            {/* Security PIN Entry */}
+            {/* Security PIN */}
             <div className="space-y-2 pt-2 border-t border-border">
-              <Label className="text-xs font-semibold flex items-center gap-1.5 text-red-600 dark:text-red-400">
-                <Lock className="w-3.5 h-3.5" /> Enter Secret PIN to Confirm (Standard Code: <span className="font-mono bg-red-500/10 px-1 rounded">8208</span>)
+              <Label className="text-xs font-semibold flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
+                <Lock className="w-3.5 h-3.5" /> Enter Security PIN to Confirm Restore
               </Label>
               <Input
                 type="password"
-                placeholder="Enter secret code 8208"
-                value={enteredPin}
-                onChange={(e) => setEnteredPin(e.target.value)}
-                className="font-mono text-center tracking-widest text-base font-bold border-red-500/40 focus-visible:ring-red-500"
+                placeholder="Enter your security PIN"
+                value={importPin}
+                onChange={(e) => setImportPin(e.target.value)}
+                className="font-mono text-center tracking-widest text-base font-bold border-blue-500/40 focus-visible:ring-blue-500"
               />
             </div>
 
-            {isDeleting && (
+            {isRestoring && (
               <div className="p-3 rounded-xl bg-muted border border-border text-center space-y-1">
                 <p className="text-xs font-semibold text-emerald-600 animate-pulse">
-                  {deleteProgress || "Wiping database records..."}
+                  {restoreProgress || "Restoring database records..."}
                 </p>
                 <p className="text-[10px] text-muted-foreground">Please do not close this window.</p>
               </div>
@@ -427,24 +583,27 @@ export default function SettingsPage() {
           <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
-              disabled={isDeleting}
-              onClick={() => setIsResetOpen(false)}
+              disabled={isRestoring}
+              onClick={() => {
+                setIsImportOpen(false);
+                setImportData(null);
+                setImportPin("");
+              }}
             >
               Cancel
             </Button>
             <Button
-              variant="destructive"
-              disabled={isDeleting || enteredPin.trim() !== secretPin.trim() || selectedCollections.length === 0}
-              onClick={handleSystemReset}
-              className="gap-2 bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30"
+              disabled={isRestoring || importPin.trim() !== secretPin.trim() || !importData}
+              onClick={handleRestore}
+              className="gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30"
             >
-              {isDeleting ? (
+              {isRestoring ? (
                 <>
-                  <RefreshCw className="w-4 h-4 animate-spin" /> Deleting...
+                  <Loader2 className="w-4 h-4 animate-spin" /> Restoring...
                 </>
               ) : (
                 <>
-                  <Trash2 className="w-4 h-4" /> Confirm & Wipe All Selected Data
+                  <CheckCircle2 className="w-4 h-4" /> Confirm & Restore Data
                 </>
               )}
             </Button>
@@ -453,4 +612,18 @@ export default function SettingsPage() {
       </Dialog>
     </div>
   );
+}
+
+// ── Helper: Relative time ──
+function getRelativeTime(date: Date): string {
+  const now = Date.now();
+  const diff = now - date.getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return `${Math.floor(days / 7)}w ago`;
 }

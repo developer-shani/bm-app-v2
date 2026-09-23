@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { db, storage } from "@/lib/firebase";
+import { triggerAutoBackup } from "@/lib/backup";
 import { collection, addDoc, updateDoc, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useAuth } from "@/hooks/use-auth";
@@ -169,6 +170,9 @@ export default function AddInvestorPage() {
       toast.success(`${fullName} ka account ban gaya! ✅`);
       setStep("success");
       setIsLoading(false);
+
+      // Trigger auto-backup after successful investor creation
+      triggerAutoBackup();
 
       // STEP 4: Upload files in background (non-blocking, data is already saved)
       // Agreement upload
