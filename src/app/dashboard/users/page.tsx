@@ -224,18 +224,8 @@ export default function UsersPage() {
     let invList: SystemUser[] = [];
     let resList: SystemUser[] = [];
 
-    const adminUser: SystemUser = {
-      id: "admin-1",
-      name: "Brother Mobiles Admin",
-      email: "admin@brothermobiles.com",
-      phone: "0300-0000000",
-      role: "admin",
-      createdAt: new Date().toISOString(),
-      status: "active",
-    };
-
     const updateFullList = () => {
-      const combined = [adminUser, ...invList, ...resList];
+      const combined = [...invList, ...resList];
       setUsersList(combined);
       setLoading(false);
       if (typeof window !== "undefined") {

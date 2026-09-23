@@ -36,8 +36,17 @@ import {
   History,
   Loader2,
   Sparkles,
-  ShieldAlert
+  ShieldAlert,
+  MoreVertical,
+  Eye,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, onSnapshot, doc, deleteDoc, addDoc, setDoc } from "firebase/firestore";
 import { Customer, DeletedRecord } from "@/types";
@@ -554,7 +563,8 @@ export default function CustomersPage() {
                         <p className="text-sm font-bold">{formatCurrency(customer.remainingAmount)}</p>
                         <p className="text-[10px] text-muted-foreground">remaining</p>
 
-                        <div className="flex gap-1 justify-end items-center pt-1">
+                        {/* Desktop: Inline buttons (hidden on mobile) */}
+                        <div className="hidden sm:flex gap-1 justify-end items-center pt-1">
                           <Link href={`/dashboard/customers/${customer.id}`}>
                             <Button variant="outline" size="sm" className="h-7 px-2 text-[11px] gap-1">
                               <Edit className="w-3 h-3" /> Edit
@@ -605,6 +615,56 @@ export default function CustomersPage() {
                               <Trash2 className="w-3 h-3" />
                             )}
                           </Button>
+                        </div>
+
+                        {/* Mobile: 3-dots dropdown menu (hidden on desktop) */}
+                        <div className="flex sm:hidden justify-end pt-1">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" size="sm" className="h-7 w-7 p-0">
+                                <MoreVertical className="w-3.5 h-3.5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44 rounded-xl">
+                              <DropdownMenuItem asChild className="text-xs gap-2 cursor-pointer">
+                                <Link href={`/dashboard/customers/${customer.id}`}>
+                                  <Eye className="w-3.5 h-3.5" />
+                                  View / Edit
+                                </Link>
+                              </DropdownMenuItem>
+                              {customer.status === "active" && (
+                                <>
+                                  <DropdownMenuItem
+                                    className="text-xs gap-2 cursor-pointer text-emerald-600 dark:text-emerald-400"
+                                    onClick={() => { window.location.href = "/dashboard/recovery"; }}
+                                  >
+                                    <CreditCard className="w-3.5 h-3.5" />
+                                    Recovery
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="text-xs gap-2 cursor-pointer"
+                                    onClick={() => handleSendMessage(customer)}
+                                  >
+                                    <MessageSquare className="w-3.5 h-3.5" />
+                                    Send Message
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-xs gap-2 cursor-pointer text-destructive focus:text-destructive"
+                                onClick={(e) => handleSoftDeleteCustomer(e as any, customer)}
+                                disabled={deletingId === customer.id}
+                              >
+                                {deletingId === customer.id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                )}
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     </div>
