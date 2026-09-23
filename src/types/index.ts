@@ -127,10 +127,15 @@ export interface Customer {
   nextDueDate: string;
   expenses: Expense[];
   editHistory?: CustomerEditHistoryItem[];
-  status: "active" | "completed" | "defaulted";
+  status: "active" | "completed" | "defaulted" | "returned";
   lossReason?: string;
   lossDate?: string;
   lossAmount?: number;
+  returnReason?: string;
+  returnDate?: string;
+  refundAmount?: number;
+  returnCondition?: string;
+  returnedCapitalRestored?: number;
   createdAt: string;
 }
 
@@ -194,7 +199,7 @@ export interface MobileCompany {
 export interface Notification {
   id: string;
   userId: string;
-  type: "investment" | "sale" | "recovery" | "withdrawal" | "alert" | "system" | "loss" | "referral";
+  type: "investment" | "sale" | "recovery" | "withdrawal" | "alert" | "system" | "loss" | "referral" | "return";
   title: string;
   message: string;
   read: boolean;

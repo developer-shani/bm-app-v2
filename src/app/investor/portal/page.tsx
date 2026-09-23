@@ -52,6 +52,7 @@ import { Wallet,
   Receipt,
   Sparkles,
   Image as ImageIcon,
+  RotateCcw
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
@@ -108,6 +109,7 @@ export default function InvestorPortalPage() {
   const [withdrawalsList, setWithdrawalsList] = useState<any[]>([]);
   const [selectedProof, setSelectedProof] = useState<{ image: string; title: string; ref?: string; note?: string } | null>(null);
   const [selectedCustomerDetail, setSelectedCustomerDetail] = useState<Customer | null>(null);
+  const [planFilter, setPlanFilter] = useState<string>("all");
 
   useEffect(() => {
     if (!appUser) {
@@ -759,13 +761,54 @@ export default function InvestorPortalPage() {
 
         {/* Customers on this investor's capital */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Users className="w-4 h-4 text-primary" />
-              Customers on Your Capital
-            </CardTitle>
-            <CardDescription>{customers.length} total customers</CardDescription>
+          <CardHeader className="pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary" />
+                  Customers on Your Capital
+                </CardTitle>
+                <CardDescription>{customers.length} total customers funded</CardDescription>
+              </div>
+
+              {/* Installment Plan Duration Filter */}
+              <div className="flex flex-wrap gap-1 bg-muted/40 p-1 rounded-xl border border-border/50">
+                <Button
+                  variant={planFilter === "all" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setPlanFilter("all")}
+                  className="text-[11px] h-7 px-2.5"
+                >
+                  All Plans
+                </Button>
+                <Button
+                  variant={planFilter === "3" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setPlanFilter("3")}
+                  className="text-[11px] h-7 px-2.5"
+                >
+                  3 Months ({customers.filter((c) => c.installmentMonths === 3).length})
+                </Button>
+                <Button
+                  variant={planFilter === "6" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setPlanFilter("6")}
+                  className="text-[11px] h-7 px-2.5"
+                >
+                  6 Months ({customers.filter((c) => c.installmentMonths === 6).length})
+                </Button>
+                <Button
+                  variant={planFilter === "9" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setPlanFilter("9")}
+                  className="text-[11px] h-7 px-2.5"
+                >
+                  9 Months ({customers.filter((c) => c.installmentMonths === 9).length})
+                </Button>
+              </div>
+            </div>
           </CardHeader>
+
           <CardContent>
             {customers.length === 0 ? (
               <div className="text-center py-8">
@@ -774,11 +817,13 @@ export default function InvestorPortalPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {customers.map((c) => {
+                {customers
+                  .filter((c) => planFilter === "all" || (Number(planFilter) > 0 && c.installmentMonths === Number(planFilter)))
+                  .map((c) => {
                   const progress = c.sellingPrice > 0 ? Math.round((c.totalPaid / c.sellingPrice) * 100) : 0;
                   const isCompleted = c.status === 'completed' || c.remainingAmount <= 0 || progress >= 100;
                   return (
-                    <div key={c.id} className={cn("p-4 rounded-xl border transition-all space-y-3", isCompleted ? "border-emerald-500/50 bg-emerald-500/5 shadow-md shadow-emerald-500/10" : "border-border/50 bg-card/60 hover:border-primary/40")}>
+                    <div key={c.id} className={cn("p-4 rounded-xl border transition-all space-y-3", isCompleted ? "border-emerald-500/50 bg-emerald-500/5 shadow-md shadow-emerald-500/10" : c.status === "returned" ? "border-amber-500/30 bg-amber-500/5" : "border-border/50 bg-card/60 hover:border-primary/40")}>
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         {/* Customer Info */}
                         <div className="flex items-center gap-3">
@@ -803,8 +848,8 @@ export default function InvestorPortalPage() {
 
                         {/* Status & Detail Trigger */}
                         <div className="flex items-center gap-2 sm:self-start">
-                          <Badge variant={c.status === "completed" ? "success" : c.status === "defaulted" ? "destructive" : "outline"} className="text-[10px] capitalize">
-                            {c.status === "completed" ? "Completed" : c.status === "defaulted" ? "Defaulted" : `${c.paidInstallments}/${c.installmentMonths} months`}
+                          <Badge variant={c.status === "completed" ? "success" : c.status === "defaulted" ? "destructive" : c.status === "returned" ? "warning" : "outline"} className="text-[10px] capitalize">
+                            {c.status === "completed" ? "Completed" : c.status === "defaulted" ? "Defaulted" : c.status === "returned" ? "Returned Handset" : `${c.paidInstallments}/${c.installmentMonths} months`}
                           </Badge>
                           <Button
                             size="sm"

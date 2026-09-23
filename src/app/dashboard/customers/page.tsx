@@ -53,6 +53,7 @@ export default function CustomersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("newest");
+  const [planFilter, setPlanFilter] = useState<string>("all");
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -173,12 +174,18 @@ export default function CustomersPage() {
         c.phone1?.includes(searchQuery) ||
         c.mobileModel?.toLowerCase().includes(searchQuery.toLowerCase());
 
-      if (filterStatus === "all") return matchesSearch;
-      if (filterStatus === "overdue") return matchesSearch && getInstallmentStatus(c.nextDueDate) === "overdue";
-      if (filterStatus === "due-soon") return matchesSearch && getInstallmentStatus(c.nextDueDate) === "due-soon";
-      if (filterStatus === "active") return matchesSearch && c.status === "active";
-      if (filterStatus === "completed") return matchesSearch && c.status === "completed";
-      return matchesSearch;
+      if (!matchesSearch) return false;
+      if (planFilter !== "all" && Number(planFilter) > 0 && c.installmentMonths !== Number(planFilter)) {
+        return false;
+      }
+
+      if (filterStatus === "all") return true;
+      if (filterStatus === "overdue") return getInstallmentStatus(c.nextDueDate) === "overdue";
+      if (filterStatus === "due-soon") return getInstallmentStatus(c.nextDueDate) === "due-soon";
+      if (filterStatus === "active") return c.status === "active";
+      if (filterStatus === "completed") return c.status === "completed";
+      if (filterStatus === "returned") return c.status === "returned";
+      return true;
     })
     .sort((a, b) => {
       if (sortBy === "overdue") {
@@ -260,6 +267,15 @@ export default function CustomersPage() {
           Completed ({customers.filter((c) => c.status === "completed").length})
         </Button>
         <Button
+          variant={filterStatus === "returned" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setFilterStatus("returned")}
+          className="text-xs h-8 gap-1.5 text-amber-600 dark:text-amber-400"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          Returned ({customers.filter((c) => c.status === "returned").length})
+        </Button>
+        <Button
           variant={filterStatus === "deleted" ? "destructive" : "ghost"}
           size="sm"
           onClick={() => setFilterStatus("deleted")}
@@ -273,9 +289,9 @@ export default function CustomersPage() {
         </Button>
       </div>
 
-      {/* Search & Sort */}
+      {/* Search & Sort & Plan Duration Filter */}
       <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[250px]">
+        <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Search name, ID, phone, or model..."
@@ -284,18 +300,36 @@ export default function CustomersPage() {
             className="pl-9 h-10 text-xs"
           />
         </div>
+
         {filterStatus !== "deleted" && (
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-[160px] h-10 text-xs">
-              <SortAsc className="w-4 h-4 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="Sort" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="overdue">Overdue First</SelectItem>
-              <SelectItem value="newest">Newest First</SelectItem>
-              <SelectItem value="amount">Highest Amount</SelectItem>
-            </SelectContent>
-          </Select>
+          <>
+            {/* Installment Plan Duration Filter */}
+            <Select value={planFilter} onValueChange={setPlanFilter}>
+              <SelectTrigger className="w-[170px] h-10 text-xs bg-card">
+                <Calendar className="w-4 h-4 mr-2 text-emerald-600" />
+                <SelectValue placeholder="Plan Duration" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Plans (1-12 Mo)</SelectItem>
+                <SelectItem value="3">3 Months Plan</SelectItem>
+                <SelectItem value="6">6 Months Plan</SelectItem>
+                <SelectItem value="9">9 Months Plan</SelectItem>
+                <SelectItem value="12">12 Months Plan</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[150px] h-10 text-xs bg-card">
+                <SortAsc className="w-4 h-4 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Sort" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="overdue">Overdue First</SelectItem>
+                <SelectItem value="newest">Newest First</SelectItem>
+                <SelectItem value="amount">Highest Amount</SelectItem>
+              </SelectContent>
+            </Select>
+          </>
         )}
       </div>
 

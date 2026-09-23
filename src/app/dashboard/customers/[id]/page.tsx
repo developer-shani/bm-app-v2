@@ -43,7 +43,8 @@ import {
   Banknote,
   Trash2,
   Edit,
-  History
+  History,
+  RotateCcw
 } from "lucide-react";
 import { db, storage } from "@/lib/firebase";
 import { doc, getDoc, collection, getDocs, query, where, orderBy, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
@@ -214,6 +215,13 @@ export default function CustomerDetailPage() {
   const [lossReason, setLossReason] = useState("");
   const [lossLoading, setLossLoading] = useState(false);
 
+  // Return Handset Dialog
+  const [showReturn, setShowReturn] = useState(false);
+  const [returnReason, setReturnReason] = useState("Handset Issue / Customer Return");
+  const [returnCondition, setReturnCondition] = useState("Like New / Good");
+  const [refundAmount, setRefundAmount] = useState("");
+  const [returnLoading, setReturnLoading] = useState(false);
+
   useEffect(() => {
     loadData();
   }, [customerId]);
@@ -327,6 +335,50 @@ export default function CustomerDetailPage() {
     }
   };
 
+  const handleReturnMobile = async () => {
+    if (!customer) return;
+    setReturnLoading(true);
+    try {
+      const refund = refundAmount !== "" ? parseFloat(refundAmount) : (customer.totalPaid || 0);
+      const capitalRestored = Math.max(0, (customer.purchasePrice || 0) - Math.max(0, (customer.totalPaid - refund)));
+
+      await updateDoc(doc(db, "customers", customer.id), {
+        status: "returned",
+        returnReason: returnReason.trim() || "Handset Return",
+        returnCondition: returnCondition.trim() || "Used",
+        refundAmount: refund,
+        returnedCapitalRestored: capitalRestored,
+        returnDate: new Date().toISOString(),
+        remainingAmount: 0,
+        nextDueDate: "",
+      });
+
+      if (investor) {
+        await updateDoc(doc(db, "investors", customer.investorId), {
+          availableBalance: (investor.availableBalance || 0) + capitalRestored,
+          activeInstallments: Math.max(0, (investor.activeInstallments || 1) - 1),
+        });
+
+        await addDoc(collection(db, "notifications"), {
+          userId: investor.userId,
+          type: "return",
+          title: "Mobile Handset Returned & Plan Stopped",
+          message: `${customer.name} ne ${customer.mobileCompany} ${customer.mobileModel} wapis kar dia hai. Installments stop kar di gayi hain aur capital Rs. ${capitalRestored.toLocaleString()} aapke Available Balance me restore kar dia gaya hai.`,
+          read: false,
+          createdAt: new Date().toISOString(),
+        });
+      }
+
+      toast.success(`Handset returned! Rs. ${capitalRestored.toLocaleString()} restored to investor balance.`);
+      setShowReturn(false);
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message || "Error processing handset return");
+    } finally {
+      setReturnLoading(false);
+    }
+  };
+
   const handleSendMessage = () => {
     if (!customer) return;
     const daysOverdue = getDaysOverdue(customer.nextDueDate);
@@ -362,6 +414,7 @@ export default function CustomerDetailPage() {
             {status === "due-soon" && <Badge variant="warning" className="gap-1"><Clock className="w-3 h-3" />Due soon</Badge>}
             {status === "completed" && <Badge variant="success" className="gap-1"><CheckCircle2 className="w-3 h-3" />Completed</Badge>}
             {status === "defaulted" && <Badge variant="destructive" className="gap-1"><Ban className="w-3 h-3" />Defaulted</Badge>}
+            {customer.status === "returned" && <Badge variant="warning" className="gap-1 bg-amber-500/10 text-amber-600 border-amber-500/30"><RotateCcw className="w-3 h-3" />Returned Handset</Badge>}
           </div>
         </div>
       </div>
@@ -413,6 +466,74 @@ export default function CustomerDetailPage() {
           <Button variant="outline" className="gap-2 border-amber-500/30 text-amber-600 hover:bg-amber-500/10" onClick={openEditModal}>
             <Edit className="w-4 h-4" /> Edit Details
           </Button>
+
+          {/* Return Handset Dialog */}
+          <Dialog open={showReturn} onOpenChange={setShowReturn}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="gap-2 text-amber-600 border-amber-500/30 hover:bg-amber-500/10 font-medium">
+                <RotateCcw className="w-4 h-4" /> Return Mobile & Stop Plan
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-amber-600 flex items-center gap-2">
+                  <RotateCcw className="w-5 h-5" /> Return Mobile Handset & Cancel Plan
+                </DialogTitle>
+                <DialogDescription>
+                  Customer handset return record ho jayega, future installments stop hongi aur investor balance me capital update hoga.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 text-sm py-2">
+                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl space-y-1">
+                  <p className="font-semibold text-xs text-amber-800 dark:text-amber-300">
+                    Handset: {customer.mobileCompany} {customer.mobileModel} ({customer.paidInstallments}/{customer.installmentMonths} Months)
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Total Paid so far: <strong className="text-foreground">{formatCurrency(customer.totalPaid)}</strong> | Purchase Price: <strong>{formatCurrency(customer.purchasePrice)}</strong>
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold">Return Reason *</Label>
+                  <Input
+                    placeholder="e.g. Handset Faulty / Customer Returned / Could Not Pay"
+                    value={returnReason}
+                    onChange={(e) => setReturnReason(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold">Handset Condition</Label>
+                  <Input
+                    placeholder="e.g. Like New / Minor Scratches / Good"
+                    value={returnCondition}
+                    onChange={(e) => setReturnCondition(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold">Refund Amount to Customer (PKR)</Label>
+                  <Input
+                    type="number"
+                    placeholder={customer.totalPaid.toString()}
+                    value={refundAmount}
+                    onChange={(e) => setRefundAmount(e.target.value)}
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    Total paid Rs. {customer.totalPaid}. Write amount to refund to customer (or 0 if no refund).
+                  </p>
+                </div>
+              </div>
+
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={() => setShowReturn(false)}>Cancel</Button>
+                <Button onClick={handleReturnMobile} disabled={returnLoading} className="bg-amber-600 hover:bg-amber-700 text-white gap-2">
+                  {returnLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />} Confirm Return & Stop Plan
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           <Button variant="outline" className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setShowDeleteCustomer(true)}>
             <Trash2 className="w-4 h-4" /> Move to Trash
