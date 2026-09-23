@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, LogOut, Moon, Sun, User, Settings, Menu, Shield, Search, Command } from "lucide-react";
+import { Bell, LogOut, Moon, Sun, User, Settings, Menu, Shield, Search, Command, RefreshCw } from "lucide-react";
 import { useTheme } from "next-themes";
 
 interface AdminHeaderProps {
@@ -86,6 +86,17 @@ export function AdminHeader({ onMenuToggle }: AdminHeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
+        {/* Quick Reset Data Button */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => router.push("/dashboard/settings")}
+          className="hidden sm:flex items-center gap-1.5 text-xs h-9 px-2.5 border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/10 font-semibold rounded-xl"
+          title="Reset Test Data (PIN: 8208)"
+        >
+          <RefreshCw className="w-3.5 h-3.5" />
+          <span>Reset Test Data</span>
+        </Button>
         {/* Theme Toggle */}
         <Button
           variant="ghost"
