@@ -63,6 +63,7 @@ interface SystemUser {
   phone: string;
   role: "admin" | "investor" | "reseller";
   cnic?: string;
+  password?: string;
   sharingRatio?: number;
   totalInvestment?: number;
   totalCommission?: number;
@@ -252,6 +253,7 @@ export default function UsersPage() {
           phone: data.phone || "",
           role: "investor",
           cnic: data.cnic || "",
+          password: data.password || "",
           sharingRatio: data.sharingRatio || 50,
           totalInvestment: data.totalInvestment || 0,
           createdAt: data.createdAt || new Date().toISOString(),
@@ -270,6 +272,7 @@ export default function UsersPage() {
           email: data.email || "",
           phone: data.phone || "",
           role: "reseller",
+          password: data.password || "",
           totalCommission: data.totalCommission || 0,
           createdAt: data.createdAt || new Date().toISOString(),
           status: data.status || "active",
@@ -327,6 +330,7 @@ export default function UsersPage() {
         cnic: invCnic || "",
         phone: invPhone,
         email: invEmail,
+        password: invPassword,
         totalInvestment: initialAmount,
         availableBalance: initialAmount,
         totalProfit: 0,
@@ -433,11 +437,14 @@ export default function UsersPage() {
         }
       }
 
+      const finalPassword = resPassword || ("BM" + Math.floor(100000 + Math.random() * 900000));
+      const finalEmail = resEmail || (resPhone.replace(/[^0-9]/g, "") + "@brother.com");
       const resellerData = {
         userId,
         fullName: resName,
         phone: resPhone,
-        email: resEmail || "",
+        email: finalEmail,
+        password: finalPassword,
         shopName: resShopName || "",
         commissionRate: parseFloat(resCommissionRate) || 5,
         totalCommission: 0,

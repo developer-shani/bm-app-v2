@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, LogOut, Moon, Sun, User, Settings, Menu, Shield, Search, Command, RefreshCw } from "lucide-react";
+import { Bell, LogOut, Moon, Sun, User, Settings, Menu, Shield, Search, Command } from "lucide-react";
 import { useTheme } from "next-themes";
 
 interface AdminHeaderProps {
@@ -86,17 +86,6 @@ export function AdminHeader({ onMenuToggle }: AdminHeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        {/* Quick Reset Data Button */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => router.push("/dashboard/settings")}
-          className="hidden sm:flex items-center gap-1.5 text-xs h-9 px-2.5 border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/10 font-semibold rounded-xl"
-          title="Reset Test Data (PIN: 8208)"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          <span>Reset Test Data</span>
-        </Button>
         {/* Theme Toggle */}
         <Button
           variant="ghost"
@@ -138,10 +127,7 @@ export function AdminHeader({ onMenuToggle }: AdminHeaderProps) {
               <Settings className="mr-2.5 h-4 w-4 text-muted-foreground" />
               Settings & Preferences
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push("/dashboard/settings")} className="rounded-xl cursor-pointer text-xs font-medium py-2 text-red-600 dark:text-red-400">
-              <Shield className="mr-2.5 h-4 w-4 text-red-500" />
-              Reset Test Data (PIN: 8208)
-            </DropdownMenuItem>
+
             <DropdownMenuItem onClick={() => router.push("/dashboard")} className="rounded-xl cursor-pointer text-xs font-medium py-2">
               <User className="mr-2.5 h-4 w-4 text-muted-foreground" />
               My Profile

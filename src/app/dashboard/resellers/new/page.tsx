@@ -91,6 +91,7 @@ export default function AddResellerPage() {
         fullName,
         phone,
         email: autoEmail,
+        password: autoPassword,
         totalCommission: 0,
         pendingCommission: 0,
         totalReferrals: 0,

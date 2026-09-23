@@ -292,6 +292,7 @@ export default function NewSalePage() {
         cnic: modalInvCnic || "",
         phone: modalInvPhone,
         email: modalInvEmail,
+        password: modalInvPassword,
         totalInvestment: initialAmount,
         availableBalance: initialAmount,
         totalProfit: 0,
